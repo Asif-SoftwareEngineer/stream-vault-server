@@ -40,9 +40,9 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'))
 })
 
-app.get('/check_health', (req, res) => {
-  res.json('<h1>The Node Server is running!</h1>')
-})
+// app.get('/check_health', (req, res) => {
+//   res.json('The Node Server is running!')
+// })
 
 app.use(api)
 
