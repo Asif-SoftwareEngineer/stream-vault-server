@@ -5,11 +5,6 @@ import { connect } from 'mongoose'
 import app from './app'
 import * as config from './config'
 
-//import * as document from 'document-ts'
-
-//import { UserCollection } from './models/user'
-//import { initializeDemoUser } from './services/userService'
-
 export let Instance: http.Server
 
 async function start() {
@@ -17,13 +12,6 @@ async function start() {
   console.log(`isProd: ${config.IsProd}`)
   console.log(`port: ${config.Port}`)
   console.log(`mongoUri: ${config.MongoUri}`)
-  console.log(`JWT-Secret: ${config.JwtSecret()}`)
-
-  // if (!config.JwtSecret() || config.JwtSecret() === 'xxxxxx') {
-  //   throw new Error(
-  //     'JWT_SECRET env var not set or set to default value. Pick a secure password.'
-  //   )
-  // }
 
   try {
     await connect(config.MongoUri, {

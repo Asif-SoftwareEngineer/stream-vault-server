@@ -8,8 +8,9 @@ export interface IUser {
   accessCode?: string
   pichain_uid?: string
   pichain_username?: string
+  userId?: string
 
-  streamvault_username: string
+  streamVault_username: string
   email: string
   country: string
   city?: string
@@ -29,9 +30,10 @@ export interface IUser {
 const userSchema = new Schema<IUser>({
   accessCode: { type: String, required: true },
   pichain_uid: { type: String, required: true },
+  userId: { type: String, required: false },
   pichain_username: { type: String, required: true },
 
-  streamvault_username: { type: String, required: true },
+  streamVault_username: { type: String, required: true },
   email: { type: String, required: true },
   country: { type: String, required: true },
   city: { type: String, required: false },
@@ -48,8 +50,8 @@ const userSchema = new Schema<IUser>({
   channels: [{ type: Object, ref: 'Channel' }],
 })
 
-userSchema.virtual('userId').get(function () {
-  return this._id
-})
+// userSchema.virtual('userId').get(function () {
+//   return this._id
+// })
 
 export const userModel = model<IUser>('User', userSchema)

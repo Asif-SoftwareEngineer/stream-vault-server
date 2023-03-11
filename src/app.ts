@@ -10,24 +10,23 @@ import bodyParser = require('body-parser')
 
 const app = express()
 
-// create application/json parser
 var jsonParser = bodyParser.json()
 
-// create application/x-www-form-urlencoded parser
 var urlencodedParser = bodyParser.urlencoded({ extended: false })
 
-// parse application/json + url encoded
 app.use(jsonParser)
 app.use(urlencodedParser)
 
 app.use(cors())
 
 app.use(
-  '/channels',
-  express.static(`D:\\Sites_Backup\\streamvault\\server\\uploads\\thumbnails\\channels`)
+  '/thumbnails/channels',
+  express.static(path.join('uploads', 'thumbnails', 'channels'))
 )
 
-app.use('/vidz', express.static(`D:\\Sites_Backup\\streamvault\\server\\uploads\\videos`))
+app.use('/thumbnails/vidz', express.static(path.join('uploads', 'thumbnails', 'videos')))
+
+app.use('/vidz', express.static(path.join('uploads', 'videos')))
 
 app.use(express.urlencoded({ extended: true }))
 app.use(logger('dev'))
@@ -40,9 +39,9 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'))
 })
 
-// app.get('/check_health', (req, res) => {
-//   res.json('The Node Server is running!')
-// })
+app.get('/check_health', (req, res) => {
+  res.json('The Node Server is running!')
+})
 
 app.use(api)
 

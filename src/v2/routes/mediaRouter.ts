@@ -75,7 +75,7 @@
 //   //         if (!updatedUserWithPics) {
 //   //           getResponseIfMediaUpdateFailed(res)
 //   //         } else {
-//   //           let filePath: string = `C:/dev/streamvault/server/uploads/${fileName}`
+//   //           let filePath: string = `C:/dev/videovault/server/uploads/${fileName}`
 //   //           fs.unlinkSync(filePath)
 //   //           res.send({
 //   //             status: 200,

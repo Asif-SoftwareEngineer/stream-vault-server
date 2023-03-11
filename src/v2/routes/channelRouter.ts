@@ -1,7 +1,6 @@
 import { randomBytes } from 'crypto'
 
 import { NextFunction, Request, Response, Router } from 'express'
-import { ObjectId } from 'mongodb'
 
 import { IChannel } from '../../models/channel'
 import { IUser, userModel } from '../../models/user'
@@ -28,7 +27,7 @@ const validateData = (req: Request, res: Response, next: NextFunction) => {
 }
 
 const isUserExisting = (req: Request, res: Response, next: NextFunction) => {
-  userModel.findById(new ObjectId(req.params.userId), function (err: Error, user: IUser) {
+  userModel.findOne({ userId: req.params.userId }, function (err: Error, user: IUser) {
     if (user === null || typeof user === 'undefined') {
       res.status(404).send({
         message: 'Channel creation request failed due to invalid UserId.',
@@ -44,7 +43,7 @@ const checkForDuplicateChannels = (req: Request, res: Response, next: NextFuncti
     [
       { $unwind: '$channels' },
       { $group: { _id: '$channels.name', count: { $sum: 1 } } },
-      { $match: { count: { $gt: 1 } } },
+      { $match: { count: { $gt: 0 } } },
     ],
     function (err, result) {
       if (err) {
@@ -52,13 +51,16 @@ const checkForDuplicateChannels = (req: Request, res: Response, next: NextFuncti
           message: `Error happened while checking duplicate record for channel name`,
         })
       } else if (result) {
+        console.log(result)
         let isChannelNameExists = result.find(({ _id }) => _id === req.body.name)
 
         if (isChannelNameExists) {
           res.status(409).send({
+            status: 409,
             message: `Duplicate record found! Channel Name:[${isChannelNameExists._id}] already exists!`,
           })
         } else {
+          console.log('no duplicate found')
           next()
         }
       } else {
@@ -71,21 +73,26 @@ const checkForDuplicateChannels = (req: Request, res: Response, next: NextFuncti
 router.get('/:userId', (req: Request, res: Response) => {
   userModel.findOne(
     {
-      userId: new ObjectId(req.params.userId),
+      userId: req.params.userId,
     },
     function (err: Error, user: IUser) {
       if (user === null || typeof user === 'undefined') {
         res.status(404).send({
+          status: 404,
           message: 'No user found with the specified userId.',
         })
       } else {
         const channels = user?.channels
         if (channels === undefined) {
           res.status(404).send({
+            status: 404,
             message: 'No channels found for the specified userId.',
           })
         } else {
-          res.status(200).send({ channels })
+          res.status(200).send({
+            status: 200,
+            channels,
+          })
         }
       }
     }
@@ -103,7 +110,7 @@ router.post(
     channelObj.userId = req.params.userId
 
     const updatedUser = await userModel.findOneAndUpdate(
-      { _id: channelObj.userId },
+      { userId: channelObj.userId },
       {
         $addToSet: { channels: { $each: [channelObj] } },
       },
@@ -111,11 +118,47 @@ router.post(
     )
 
     if (!updatedUser) {
-      res.status(404).send({ message: 'Channel Addition failed!' })
+      res.status(404).send({
+        status: 404,
+        message: 'Channel Addition failed!',
+      })
     } else {
-      res.status(200).send({ channelAdded: channelObj })
+      res.status(200).send({
+        status: 200,
+        message: 'Channel has been created successfully.',
+        channelAdded: channelObj,
+      })
     }
   }
 )
+
+router.get('/check/:channelName', (req: Request, res: Response) => {
+  userModel.aggregate(
+    [
+      { $unwind: '$channels' },
+      { $group: { _id: '$channels.name', count: { $sum: 1 } } },
+      { $match: { count: { $gt: 0 } } },
+    ],
+    function (err, result) {
+      if (err) {
+        res.status(400).send({
+          message: `Error happened while checking duplicate record for channel name`,
+        })
+      } else if (result) {
+        console.log(result)
+        let isChannelNameExists = result.find(({ _id }) => _id === req.params.channelName)
+
+        if (isChannelNameExists) {
+          res.status(409).send({
+            status: 409,
+            message: `Duplicate record found! Channel Name:[${isChannelNameExists._id}] already exists!`,
+          })
+        } else {
+          res.status(200).json('no duplicate found')
+        }
+      }
+    }
+  )
+})
 
 export default router

@@ -1,8 +1,10 @@
 import { Router } from 'express'
 
 import channelRouter from './routes/channelRouter'
+import paymentRouter from './routes/paymentsRouter'
 import searchRouter from './routes/searchRouter'
 import settingRouter from './routes/settingRouter'
+import signinRouter from './routes/signinRouter'
 import userRouter from './routes/userRouter'
 import videoRouter from './routes/videoRouter'
 
@@ -14,5 +16,7 @@ router.use('/video', videoRouter)
 router.use('/search', searchRouter)
 router.use('/setting', settingRouter)
 router.use('/users?', userRouter)
+router.use('/signin', signinRouter)
+router.use('/payments', paymentRouter)
 
 export default router

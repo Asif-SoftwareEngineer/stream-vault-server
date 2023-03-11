@@ -3,6 +3,8 @@ import { ObjectId } from 'mongodb'
 
 import { IUser, userModel } from '../../models/user'
 
+import moment = require('moment')
+
 const router = Router()
 
 router.get('/', (req: Request, res: Response) => {
@@ -36,8 +38,7 @@ router.get('/registeredUser', async (req: Request, res: Response) => {
       accessCode: 1,
       pichain_uid: 1,
       pichain_username: 1,
-      streamvault_uid: 1,
-      streamvault_username: 1,
+      videovault_username: 1,
       email: 1,
       country: 1,
       city: 1,
@@ -84,7 +85,7 @@ router.post('/register', async (req: Request, res: Response) => {
     accessCode: regDto.accessCode,
     pichain_uid: regDto.pichain_uid,
     pichain_username: regDto.pichain_username,
-    streamvault_username: regDto.streamvault_username,
+    videovault_username: regDto.videovault_username,
     email: regDto.email,
     country: regDto.country,
     city: regDto.city,
@@ -97,8 +98,6 @@ router.post('/register', async (req: Request, res: Response) => {
     isProfileDisabled: regDto.isProfileDisabled,
     isMembershipExpired: true,
   })
-
-  //      res.send({ status: 500, Message: 'User registration failed!' })
 
   userObj.save((err, userObjCreated) => {
     if (err) {
@@ -117,56 +116,89 @@ router.post('/register', async (req: Request, res: Response) => {
 
 router.post('/member', async (req: Request, res: Response) => {
   let regDto = req.body
-  let userObj = new userModel({})
+  //const session = req.headers.session // We have to utilize the db session here later
 
-  if (regDto.userId.length > 0) {
-    // update membership only details to the registered user only
-    userObj = new userModel({
-      membership_date: regDto.membership_date,
-      membership_Type: regDto.membership_Type,
-      //membership_renewal_date: regDto.membership_renewal_date, //we will look into this later
-      isMembershipExpired: false,
+  //Check if the new member is already a registered user
+  const registeredUser = await userModel.findById(regDto.userId)
+  console.log('check the registered user value' + JSON.stringify(registeredUser))
+  // Define the subscription interval
+  const subscriptionInterval = 'monthly' // Can be 'monthly', 'quarterly', 'half-yearly', or 'yearly'
+  let renewalDate = moment()
+
+  // Calculate the renewal date based on the subscription interval
+  // Default to one month ahead
+  if (subscriptionInterval === 'monthly') {
+    renewalDate = moment().add(1, 'month')
+  } else if (subscriptionInterval === 'quarterly') {
+    renewalDate = moment().add(3, 'months')
+  } else if (subscriptionInterval === 'half-yearly') {
+    renewalDate = moment().add(6, 'months')
+  } else if (subscriptionInterval === 'yearly') {
+    renewalDate = moment().add(1, 'year')
+  }
+
+  try {
+    if (registeredUser) {
+      // update membership details to the registered user only
+      await userModel.updateOne(
+        { _id: new ObjectId(regDto.userId) },
+        {
+          $set: {
+            membership_date: regDto.membership_date,
+            membership_Type: regDto.membership_Type,
+            membership_renewal_date: renewalDate,
+            isMembershipExpired: false,
+          },
+        }
+      )
+    } else {
+      console.log(JSON.stringify(regDto))
+      //This is completely a new registration with membership
+
+      let userObj = new userModel({
+        accessCode: regDto.accessCode,
+        pichain_uid: regDto.pichain_uid,
+        pichain_username: regDto.pichain_username,
+        videovault_username: regDto.videovault_username,
+        email: regDto.email,
+        country: regDto.country,
+        city: regDto.city,
+        role: regDto.role,
+        registration_date: new Date(),
+        picture: '',
+        isProfileDisabled: regDto.isProfileDisabled,
+        membership_date: regDto.membership_date,
+        membership_Type: regDto.membership_Type,
+        membership_renewal_date: renewalDate,
+        isMembershipExpired: false,
+      })
+
+      userObj.save((err, userObjCreated) => {
+        if (err) {
+          console.log(err.message)
+          res.send({ status: 500, Message: 'User registration failed!' })
+        } else {
+          console.log(JSON.stringify(userObjCreated))
+          res.send({
+            status: 200,
+            Message: `User [${userObj.pichain_username}] has been registered.`,
+            userDetails: userObjCreated,
+          })
+        }
+      })
+    }
+    res.send({
+      status: 200,
+      Message: `Membership created for user: ${regDto.pichain_uid} `,
     })
+  } catch (error) {
+    console.log('---------------------------------------------------------------')
 
-    await userModel.findOneAndUpdate(
-      { _id: new ObjectId(regDto.userId) },
-      {
-        $set: userObj,
-      }
-    )
-  } else {
-    userObj = new userModel({
-      // create a newly registered user with membership details
-      accessCode: regDto.accessCode,
-      pichain_uid: regDto.pichain_uid,
-      pichain_username: regDto.pichain_username,
-      streamvault_username: regDto.streamvault_username,
-      email: regDto.email,
-      country: regDto.country,
-      city: regDto.city,
-      role: regDto.role,
-      registration_date: new Date(),
-      picture: '',
-      isProfileDisabled: regDto.isProfileDisabled,
-
-      membership_date: regDto.membership_date,
-      membership_Type: regDto.membership_Type,
-      //membership_renewal_date: regDto.membership_renewal_date, //we will look into this later
-      isMembershipExpired: false,
-    })
-
-    await userObj.save((err, userObj) => {
-      if (err) {
-        console.log(err.message)
-        res.send({ status: 500, Message: 'Unable to register the user!' })
-      } else {
-        res.send({
-          status: 200,
-          Message: `User added as a registered member: ${userObj.pichain_username} `,
-          userDetails: userObj,
-        })
-      }
-    })
+    console.log(error)
+    // res.send({
+    //   status: 500,
+    //   Message: `Failed to create user's membership for user: ${regDto.pichain_uid} `,
+    // })
   }
 })
 

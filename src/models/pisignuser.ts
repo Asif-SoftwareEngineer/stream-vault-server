@@ -1,0 +1,30 @@
+import { Schema, model } from 'mongoose'
+
+export interface UserDTO {
+  uid: string // An app-specific user identifier
+  credentials: {
+    valid_until: {
+      timestamp: number
+      iso8601: string
+    }
+  }
+  username?: string // The user's Pi username. Requires the `username` scope.
+}
+
+export interface IPiUser {
+  accessToken: string
+  uid: string
+  username: string
+  valid_timestamp: number
+  iso8601: string
+}
+
+const piUserSchema = new Schema<IPiUser>({
+  accessToken: { type: String, required: true },
+  uid: { type: String, required: true },
+  username: { type: String, required: true },
+  valid_timestamp: { type: Number, required: true },
+  iso8601: { type: String, required: true },
+})
+
+export const piUserModel = model<IPiUser>('Signin', piUserSchema)
