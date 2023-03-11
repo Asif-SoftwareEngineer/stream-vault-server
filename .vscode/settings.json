@@ -31,10 +31,10 @@
   "peacock.affectTitleBar": false,
   "peacock.color": "#2946f8",
   "workbench.colorCustomizations": {
-    "activityBar.background": "#3e9bc0",
-    "activityBar.activeBackground": "#fa675a",
+    "activityBar.background": "#5a71fa",
+    "activityBar.activeBackground": "#5a71fa",
     "activityBar.activeBorder": "#c01d25",
-    "activityBar.foreground": "#901c1c",
+    "activityBar.foreground": "#e7e7e7",
     "activityBar.inactiveForeground": "#e7e7e799",
     "activityBarBadge.background": "#fca2af",
     "activityBarBadge.foreground": "#15202b",
