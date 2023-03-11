@@ -5,4 +5,4 @@ test_results
 .env
 node_modules
 dist
-pistream-server
+streamvault-server

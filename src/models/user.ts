@@ -9,7 +9,7 @@ export interface IUser {
   pichain_uid?: string
   pichain_username?: string
 
-  pistream_username: string
+  streamvault_username: string
   email: string
   country: string
   city?: string
@@ -31,7 +31,7 @@ const userSchema = new Schema<IUser>({
   pichain_uid: { type: String, required: true },
   pichain_username: { type: String, required: true },
 
-  pistream_username: { type: String, required: true },
+  streamvault_username: { type: String, required: true },
   email: { type: String, required: true },
   country: { type: String, required: true },
   city: { type: String, required: false },

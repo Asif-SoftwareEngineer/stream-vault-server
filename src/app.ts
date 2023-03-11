@@ -24,10 +24,10 @@ app.use(cors())
 
 app.use(
   '/channels',
-  express.static(`D:\\Sites_Backup\\PiStream\\server\\uploads\\thumbnails\\channels`)
+  express.static(`D:\\Sites_Backup\\streamvault\\server\\uploads\\thumbnails\\channels`)
 )
 
-app.use('/vidz', express.static(`D:\\Sites_Backup\\PiStream\\server\\uploads\\videos`))
+app.use('/vidz', express.static(`D:\\Sites_Backup\\streamvault\\server\\uploads\\videos`))
 
 app.use(express.urlencoded({ extended: true }))
 app.use(logger('dev'))

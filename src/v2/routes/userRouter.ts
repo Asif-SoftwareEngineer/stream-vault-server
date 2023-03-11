@@ -1,7 +1,7 @@
-import { IUser, userModel } from '../../models/user'
 import { Request, Response, Router } from 'express'
-
 import { ObjectId } from 'mongodb'
+
+import { IUser, userModel } from '../../models/user'
 
 const router = Router()
 
@@ -36,8 +36,8 @@ router.get('/registeredUser', async (req: Request, res: Response) => {
       accessCode: 1,
       pichain_uid: 1,
       pichain_username: 1,
-      pistream_uid: 1,
-      pistream_username: 1,
+      streamvault_uid: 1,
+      streamvault_username: 1,
       email: 1,
       country: 1,
       city: 1,
@@ -84,7 +84,7 @@ router.post('/register', async (req: Request, res: Response) => {
     accessCode: regDto.accessCode,
     pichain_uid: regDto.pichain_uid,
     pichain_username: regDto.pichain_username,
-    pistream_username: regDto.pistream_username,
+    streamvault_username: regDto.streamvault_username,
     email: regDto.email,
     country: regDto.country,
     city: regDto.city,
@@ -140,7 +140,7 @@ router.post('/member', async (req: Request, res: Response) => {
       accessCode: regDto.accessCode,
       pichain_uid: regDto.pichain_uid,
       pichain_username: regDto.pichain_username,
-      pistream_username: regDto.pistream_username,
+      streamvault_username: regDto.streamvault_username,
       email: regDto.email,
       country: regDto.country,
       city: regDto.city,
