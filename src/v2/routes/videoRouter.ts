@@ -1,10 +1,10 @@
-import { IUser, userModel } from '../../models/user'
+import { randomBytes } from 'crypto'
+
 import { NextFunction, Request, Response, Router } from 'express'
 
 import { IChannel } from '../../models/channel'
+import { IUser, userModel } from '../../models/user'
 import { IVideo } from '../../models/video'
-import { ObjectId } from 'mongodb'
-import { randomBytes } from 'crypto'
 
 import uploadController = require('./../../controllers/fileUpload-controller')
 
@@ -54,7 +54,7 @@ const isUserandChannelExisting = (req: Request, res: Response, next: NextFunctio
 router.get('/:userId/:channelId', (req: Request, res: Response) => {
   userModel.findOne(
     {
-      userId: new ObjectId(req.params.userId),
+      userId: req.params.userId,
       'channels.channelId': req.params.channelId,
     },
     function (err: Error, user: IUser) {
@@ -83,6 +83,43 @@ router.get('/:userId/:channelId', (req: Request, res: Response) => {
       }
     }
   )
+})
+
+router.get('/', async (req: Request, res: Response) => {
+  // const videos = await userModel.aggregate([
+  //   { $unwind: '$channels' },
+  //   { $unwind: '$channels.videos' },
+  //   { $project: { _id: 0, video: '$channels.videos' } },
+  // ])
+
+  const videos = userModel.aggregate([
+    { $unwind: '$channels' },
+    { $unwind: '$channels.videos' },
+    {
+      $lookup: {
+        from: 'channels',
+        localField: 'channels._id',
+        foreignField: '_id',
+        as: 'channel',
+      },
+    },
+    { $unwind: '$channel' },
+    {
+      $project: {
+        user_name: '$pichain_username',
+        channel_name: '$channel.name',
+        video: '$channels.videos',
+      },
+    },
+  ])
+
+  if (videos === undefined) {
+    res.status(404).send({
+      message: 'No videos found!',
+    })
+  } else {
+    res.status(200).send({ videos })
+  }
 })
 
 router.post(

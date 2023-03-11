@@ -8,7 +8,7 @@ import util = require('util')
 let storage = multer.diskStorage({
   destination: function (req, file, cb) {
     // Uploads is the Upload_folder_name
-    cb(null, 'uploads')
+    cb(null, 'uploads/videos')
   },
   filename: function (req, file, cb) {
     const fileName = file.originalname

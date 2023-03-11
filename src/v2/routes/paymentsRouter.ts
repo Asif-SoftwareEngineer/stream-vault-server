@@ -130,19 +130,18 @@ router.post('/complete', async (req, res) => {
     const paymentObjCB = await platformAPIClient.get(`/v2/payments/${paymentIdCB}`)
     const currentPayment = paymentObjCB.data
 
-    await paymentModel.updateOne(
-      { paymentId: paymentIdCB },
-      {
-        $set: {
-          txid: txidCB,
-          paid: true,
-        },
-      }
-    )
-
     const isMembershipCreatedOrUpdted = await createMembership(currentPayment.metadata)
 
     if (isMembershipCreatedOrUpdted) {
+      await paymentModel.updateOne(
+        { paymentId: paymentIdCB },
+        {
+          $set: {
+            txid: txidCB,
+            paid: true,
+          },
+        }
+      )
       await platformAPIClient.post(`/v2/payments/${paymentIdCB}/complete`, {
         txid: txidCB,
       })
