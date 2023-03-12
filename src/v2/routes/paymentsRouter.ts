@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { Request, Response, Router } from 'express'
 
-import { paymentModel } from '../../models/payment'
+import { PaymentDTO, paymentModel } from '../../models/payment'
 import { IUser, userModel } from '../../models/user'
 import platformAPIClient from '../../platformApiClient'
 
@@ -85,40 +85,38 @@ router.post('/incomplete', async (req, res) => {
 
 // approve the current payment
 router.post('/approve', async (req: Request, res: Response) => {
-  const paymentIdCB = req.body.paymentId
-  const paymentObjCB: any = await platformAPIClient.get(`/v2/payments/${paymentIdCB}`)
+  try {
+    const paymentIdCB = req.body.paymentId
+    const paymentObj = await platformAPIClient.get<PaymentDTO>(
+      `/v2/payments/${paymentIdCB}`
+    )
+    const { data: currentPayment } = paymentObj
 
-  const currentPayment = paymentObjCB.data
+    const payment = new paymentModel({
+      uid: currentPayment.user_uid,
+      paymentId: currentPayment.identifier,
+      memo: currentPayment.memo,
+      amount: currentPayment.amount,
+      paid: false,
+      cancelled: false,
+      created_at: new Date(),
+    })
 
-  let payment = new paymentModel({
-    uid: currentPayment.user_uid,
-    paymentId: currentPayment.identifier,
-    memo: currentPayment.memo,
-    amount: currentPayment.amount,
-    paid: false,
-    cancelled: false,
-    created_at: new Date(),
-  })
+    const paymentObjCreated = await payment.save()
 
-  payment.save((err, paymentObjCreated) => {
-    if (err) {
-      console.log(err.message)
-    } else {
-      console.log(
-        'payment record create during the approve process: ' +
-          JSON.stringify(paymentObjCreated)
-      )
-      // let Pi Servers know that you're ready
-      console.log('About to call the approve api at pi blockchain testnet')
+    // let Pi Servers know that you're ready
+    console.log('About to call the approve api at pi blockchain testnet')
 
-      platformAPIClient.post(`/v2/payments/${paymentObjCreated.paymentId}/approve`)
-      res.status(200).json({
-        status: 200,
-        paymentfor: 'membership',
-        message: `Approved the payment ${paymentObjCreated.paymentId}`,
-      })
-    }
-  })
+    await platformAPIClient.post(`/v2/payments/${paymentObjCreated.paymentId}/approve`)
+
+    res.status(200).json({
+      status: 200,
+      paymentfor: 'membership',
+      message: `Approved the payment ${paymentObjCreated.paymentId}`,
+    })
+  } catch (err) {
+    console.log(err)
+  }
 })
 
 router.post('/complete', async (req, res) => {
@@ -211,7 +209,6 @@ async function createMembership(regDTO: IUser): Promise<boolean> {
       renewalDate = moment().add(1, 'year')
     }
 
-    console.log('registered user: ' + registeredUser)
     if (registeredUser) {
       // update membership details to the registered user only
       await userModel.updateOne(
@@ -227,7 +224,6 @@ async function createMembership(regDTO: IUser): Promise<boolean> {
       )
     } else {
       //This is completely a new registration with membership
-      console.log('about to create a new member')
       const userObj = new userModel({
         accessCode: regDTO.accessCode,
         pichain_uid: regDTO.pichain_uid,

@@ -92,7 +92,7 @@ router.get('/', async (req: Request, res: Response) => {
   //   { $project: { _id: 0, video: '$channels.videos' } },
   // ])
 
-  const videos = userModel.aggregate([
+  const videos = await userModel.aggregate([
     { $unwind: '$channels' },
     { $unwind: '$channels.videos' },
     {

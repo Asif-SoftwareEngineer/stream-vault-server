@@ -46,8 +46,6 @@ router.post('/:token', async (req, res) => {
         iso8601: me.credentials.valid_until.iso8601,
       })
 
-      console.log(newPiSigningUser)
-
       await newPiSigningUser.save()
 
       return res.status(200).json({ status: 200, message: 'User signed in' })

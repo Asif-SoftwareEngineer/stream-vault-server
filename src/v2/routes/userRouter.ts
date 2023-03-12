@@ -101,10 +101,9 @@ router.post('/register', async (req: Request, res: Response) => {
 
   userObj.save((err, userObjCreated) => {
     if (err) {
-      console.log(err.message)
+
       res.send({ status: 500, Message: 'User registration failed!' })
     } else {
-      console.log(JSON.stringify(userObjCreated))
       res.send({
         status: 200,
         Message: `User [${userObj.pichain_username}] has been registered.`,
@@ -120,7 +119,7 @@ router.post('/member', async (req: Request, res: Response) => {
 
   //Check if the new member is already a registered user
   const registeredUser = await userModel.findById(regDto.userId)
-  console.log('check the registered user value' + JSON.stringify(registeredUser))
+
   // Define the subscription interval
   const subscriptionInterval = 'monthly' // Can be 'monthly', 'quarterly', 'half-yearly', or 'yearly'
   let renewalDate = moment()
@@ -152,7 +151,7 @@ router.post('/member', async (req: Request, res: Response) => {
         }
       )
     } else {
-      console.log(JSON.stringify(regDto))
+
       //This is completely a new registration with membership
 
       let userObj = new userModel({
@@ -175,10 +174,10 @@ router.post('/member', async (req: Request, res: Response) => {
 
       userObj.save((err, userObjCreated) => {
         if (err) {
-          console.log(err.message)
+
           res.send({ status: 500, Message: 'User registration failed!' })
         } else {
-          console.log(JSON.stringify(userObjCreated))
+
           res.send({
             status: 200,
             Message: `User [${userObj.pichain_username}] has been registered.`,
