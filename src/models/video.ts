@@ -4,6 +4,7 @@ export interface IVideo {
   channelId: string
   title: string
   description: string
+  thumbnail: string
   category: string
   tags?: string[]
   likes?: string[]

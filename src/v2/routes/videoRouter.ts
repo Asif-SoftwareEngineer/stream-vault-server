@@ -2,7 +2,6 @@ import { randomBytes } from 'crypto'
 
 import { NextFunction, Request, Response, Router } from 'express'
 
-import { IChannel } from '../../models/channel'
 import { IUser, userModel } from '../../models/user'
 import { IVideo } from '../../models/video'
 
@@ -51,38 +50,57 @@ const isUserandChannelExisting = (req: Request, res: Response, next: NextFunctio
   )
 }
 
-router.get('/:userId/:channelId', (req: Request, res: Response) => {
-  userModel.findOne(
+router.get('/:userId', async (req: Request, res: Response) => {
+  const serverUrl: string = `${req.protocol}://${req.get('host')}`
+
+  const pipeline = [
+    // Match documents that have at least one video
     {
-      userId: req.params.userId,
-      'channels.channelId': req.params.channelId,
+      $match: {
+        'channels.videos': { $exists: true },
+      },
     },
-    function (err: Error, user: IUser) {
-      if (user === null || typeof user === 'undefined') {
-        res.status(404).send({
-          message: 'No user found with the specified userId.',
-        })
-      } else {
-        const channel = user?.channels?.find(
-          (c: IChannel) => c.channelId.toString() === req.params.channelId
-        )
-        if (channel === undefined) {
-          res.status(404).send({
-            message: 'No channel found with the specified channelId.',
-          })
-        } else {
-          const videos = channel?.videos
-          if (videos === undefined) {
-            res.status(404).send({
-              message: 'No videos found for the specified channel.',
-            })
-          } else {
-            res.status(200).send({ videos })
-          }
-        }
-      }
-    }
-  )
+    // Unwind the channels array to create a separate document for each channel
+    {
+      $unwind: '$channels',
+    },
+    // Unwind the videos array to create a separate document for each video
+    {
+      $unwind: '$channels.videos',
+    },
+    // Project the fields you want to include in the output
+    {
+      $project: {
+        _id: 0,
+        videoId: '$channels.videos.videoId',
+        userName: '$streamVault_username',
+        channelName: '$channels.name',
+        title: '$channels.videos.title',
+        description: '$channels.videos.description',
+        url: { $concat: [serverUrl, '/vidz/', '$channels.videos.filePath'] },
+        thumbnail: {
+          $concat: [serverUrl, '/thumbnails/vidz/', '$channels.videos.thumbnail'],
+        },
+        likes: '$channels.videos.likes',
+        dislikes: '$channels.videos.dislikes',
+        comments: '$channels.videos.comments',
+      },
+    },
+  ]
+
+  const videosList = await userModel.aggregate(pipeline).exec()
+
+  if (videosList === undefined) {
+    res.status(404).send({
+      status: 404,
+      message: 'No videos found for the specified userId.',
+    })
+  } else {
+    res.status(200).send({
+      status: 200,
+      videosList,
+    })
+  }
 })
 
 router.get('/', async (req: Request, res: Response) => {

@@ -1,8 +1,9 @@
 *.js
 *.js.map
+*.log
 declarations
 test_results
 .env
 node_modules
 dist
-streamvault-server
+
