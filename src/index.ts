@@ -4,6 +4,7 @@ import { connect } from 'mongoose'
 
 import app from './app'
 import * as config from './config'
+import { errorLogger, infoLogger } from './loggers'
 
 export let Instance: http.Server
 
@@ -18,23 +19,23 @@ async function start() {
       connectTimeoutMS: 1000,
     }).then(
       () => {
-        console.log('Connection to the MongoDb has been established')
+        infoLogger.info('Connection to the MongoDb has been established')
       },
       (err) => {
-        console.log('Express Server failed to connect to MongoDB')
+        errorLogger.error(err)
       }
     )
   } catch (ex) {
-    console.log(`Couldn't connect to a database: ${ex}`)
+    errorLogger.error(`Couldn't connect to a database: ${ex}`)
   }
 
   Instance = http.createServer(app)
 
   Instance.listen(config.Port, async () => {
-    console.log(`Server listening on port ${config.Port}...`)
-    console.log('Initializing default user...')
+    infoLogger.info(`Server listening on port ${config.Port}...`)
 
-    console.log('Server Start: Done.')
+
+    infoLogger.info('Server Start: Done.')
   })
 }
 start()

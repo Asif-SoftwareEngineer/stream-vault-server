@@ -2,7 +2,6 @@ import * as path from 'path'
 
 import * as cors from 'cors'
 import * as express from 'express'
-import * as logger from 'morgan'
 
 import api from './api'
 
@@ -29,7 +28,6 @@ app.use('/thumbnails/vidz', express.static(path.join('uploads', 'thumbnails', 'v
 app.use('/vidz', express.static(path.join('uploads', 'videos')))
 
 app.use(express.urlencoded({ extended: true }))
-app.use(logger('dev'))
 
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')))

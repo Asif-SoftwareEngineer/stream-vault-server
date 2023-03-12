@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { Request, Response, Router } from 'express'
 
+import { errorLogger, infoLogger } from '../../loggers'
 import { PaymentDTO, paymentModel } from '../../models/payment'
 import { IUser, userModel } from '../../models/user'
 import platformAPIClient from '../../platformApiClient'
@@ -105,7 +106,7 @@ router.post('/approve', async (req: Request, res: Response) => {
     const paymentObjCreated = await payment.save()
 
     // let Pi Servers know that you're ready
-    console.log('About to call the approve api at pi blockchain testnet')
+    infoLogger.info('About to call the approve api at pi blockchain testnet')
 
     await platformAPIClient.post(`/v2/payments/${paymentObjCreated.paymentId}/approve`)
 
@@ -115,18 +116,20 @@ router.post('/approve', async (req: Request, res: Response) => {
       message: `Approved the payment ${paymentObjCreated.paymentId}`,
     })
   } catch (err) {
-    console.log(err)
+    errorLogger.error(err)
   }
 })
 
 router.post('/complete', async (req, res) => {
   const paymentIdCB = req.body.paymentId
   const txidCB = req.body.txid
-  console.log('Complete API called back')
+  infoLogger.info('Complete API called back')
 
   try {
-    const paymentObjCB = await platformAPIClient.get(`/v2/payments/${paymentIdCB}`)
-    const currentPayment = paymentObjCB.data
+    const paymentObj = await platformAPIClient.get<PaymentDTO>(
+      `/v2/payments/${paymentIdCB}`
+    )
+    const { data: currentPayment } = paymentObj
 
     const isMembershipCreatedOrUpdted = await createMembership(currentPayment.metadata)
 
@@ -143,6 +146,7 @@ router.post('/complete', async (req, res) => {
       await platformAPIClient.post(`/v2/payments/${paymentIdCB}/complete`, {
         txid: txidCB,
       })
+      infoLogger.info(`Membership for the user  ${currentPayment.user_uid}`)
       res.status(200).json({
         status: 200,
         paymentfor: 'membership',
@@ -152,7 +156,7 @@ router.post('/complete', async (req, res) => {
       throw new Error(`Failed to create membership against payment: ${paymentIdCB}`)
     }
   } catch (error) {
-    console.log(error)
+    errorLogger.error(error)
     res.status(500).json({
       status: 500,
       paymentfor: 'membership',
@@ -165,7 +169,7 @@ router.post('/complete', async (req, res) => {
 router.post('/cancelled_payment', async (req, res) => {
   const paymentIdCB = req.body.paymentId
 
-  console.log('cancel payment api called back')
+  infoLogger.info('cancel payment api called back')
 
   /*
     implement your logic here
@@ -189,8 +193,9 @@ router.post('/cancelled_payment', async (req, res) => {
   })
 })
 
-async function createMembership(regDTO: IUser): Promise<boolean> {
+async function createMembership(paramRegDTO: any): Promise<boolean> {
   try {
+    const regDTO: IUser = paramRegDTO as IUser
     const registeredUser = await userModel.findOne({ userId: regDTO.pichain_uid })
 
     // Define the subscription interval
@@ -248,8 +253,7 @@ async function createMembership(regDTO: IUser): Promise<boolean> {
 
     return true
   } catch (error) {
-    console.log(error)
-
+    errorLogger.error(error)
     return false
   }
 }

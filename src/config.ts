@@ -3,6 +3,8 @@ export const Port = process.env.PORT || 3000
 export const MongoUri =
   process.env.MONGO_URI ||
   'mongodb+srv://asifj:Allah786online$$@videovaultdb.vz1cpzp.mongodb.net/videovault_db'
+//'mongodb://localhost:27017/videovault_db'
+//  'mongodb+srv://asifj:Allah786online$$@videovaultdb.vz1cpzp.mongodb.net/videovault_db'
 export const session_secret = process.env.SESSION_SECRET || 'This is my session secret'
 export const pi_api_key =
   process.env.PI_API_KEY ||
