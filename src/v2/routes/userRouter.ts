@@ -1,9 +1,8 @@
 import { Request, Response, Router } from 'express'
+import * as moment from 'moment'
 import { ObjectId } from 'mongodb'
 
 import { IUser, userModel } from '../../models/user'
-
-import moment = require('moment')
 
 const router = Router()
 

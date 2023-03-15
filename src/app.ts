@@ -1,11 +1,10 @@
 import * as path from 'path'
 
+import * as bodyParser from 'body-parser'
 import * as cors from 'cors'
 import * as express from 'express'
 
 import api from './api'
-
-import bodyParser = require('body-parser')
 
 const app = express()
 
@@ -26,6 +25,8 @@ app.use(
 app.use('/thumbnails/vidz', express.static(path.join('uploads', 'thumbnails', 'videos')))
 
 app.use('/vidz', express.static(path.join('uploads', 'videos')))
+
+app.use('/stream/:file', express.static(path.join('uploads', 'videos')))
 
 app.use(express.urlencoded({ extended: true }))
 

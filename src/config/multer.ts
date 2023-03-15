@@ -1,7 +1,7 @@
+import * as path from 'path'
+
 import { Request } from 'express'
 import * as multer from 'multer'
-
-import path = require('path')
 
 type DestinationCallback = (error: Error | null, destination: string) => void
 type FileNameCallback = (error: Error | null, filename: string) => void

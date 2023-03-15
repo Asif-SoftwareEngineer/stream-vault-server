@@ -70,6 +70,26 @@ const checkForDuplicateChannels = (req: Request, res: Response, next: NextFuncti
   )
 }
 
+router.get('/', async (req: Request, res: Response) => {
+  const pipeline = [
+    { $project: { channels: 1, _id: 0 } },
+    { $unwind: '$channels' },
+    { $replaceRoot: { newRoot: '$channels' } },
+  ]
+  const channelsList = await userModel.aggregate(pipeline).exec()
+  if (channelsList === undefined) {
+    res.status(404).send({
+      status: 404,
+      message: 'No channels found!',
+    })
+  } else {
+    res.status(200).send({
+      status: 200,
+      channelsList,
+    })
+  }
+})
+
 router.get('/:userId', (req: Request, res: Response) => {
   userModel.findOne(
     {

@@ -1,12 +1,11 @@
 import axios from 'axios'
 import { Request, Response, Router } from 'express'
+import * as moment from 'moment'
 
 import { errorLogger, infoLogger } from '../../loggers'
 import { PaymentDTO, paymentModel } from '../../models/payment'
 import { IUser, userModel } from '../../models/user'
 import platformAPIClient from '../../platformApiClient'
-
-import moment = require('moment')
 
 const router = Router()
 

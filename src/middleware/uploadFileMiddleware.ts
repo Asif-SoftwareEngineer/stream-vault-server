@@ -1,9 +1,10 @@
 //import { NextFunction, Request, Response, Router } from 'express'
 
+import * as util from 'util'
+
 import * as multer from 'multer'
 
 //import path = require('path')
-import util = require('util')
 
 let storage = multer.diskStorage({
   destination: function (req, file, cb) {

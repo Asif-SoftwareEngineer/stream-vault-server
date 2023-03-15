@@ -2,10 +2,9 @@ import { randomBytes } from 'crypto'
 
 import { NextFunction, Request, Response, Router } from 'express'
 
+import * as uploadController from './../../controllers/fileUpload-controller'
 import { IUser, userModel } from '../../models/user'
 import { IVideo } from '../../models/video'
-
-import uploadController = require('./../../controllers/fileUpload-controller')
 
 const router = Router()
 
@@ -77,7 +76,7 @@ router.get('/:userId', async (req: Request, res: Response) => {
         channelName: '$channels.name',
         title: '$channels.videos.title',
         description: '$channels.videos.description',
-        url: { $concat: [serverUrl, '/vidz/', '$channels.videos.filePath'] },
+        url: { $concat: [serverUrl, '/v2/stream/', '$channels.videos.filePath'] },
         thumbnail: {
           $concat: [serverUrl, '/thumbnails/vidz/', '$channels.videos.thumbnail'],
         },
@@ -178,17 +177,5 @@ router.post(
 )
 
 router.post('/upload/:userId/:channelId', uploadController.upload)
-
-// router.put(
-//   '/:userId/:channelId',
-//   isUserandChannelExisting,
-//   async (req: Request, res: Response) => {}
-// )
-
-// router.delete(
-//   '/deleteVideo/:userId/:channelId',
-//   isUserandChannelExisting,
-//   async (req: Request, res: Response) => {}
-// )
 
 export default router
