@@ -17,7 +17,7 @@
     "prebuild": "rimraf dist",
     "postbuild": "npm run copy:assets",
     "build": "tsc -p tsconfig.src.json",
-    "copy:assets": "copyfiles -E \"uploads/**/*\" \"dist/public/\" && copyfiles -f \"src/public/**/*\" \"dist/public/\"",
+    "copy:assets": "copyfiles -f \"src/public/**/*\" \"dist/public/\"",
     "build:test": "tsc -p tests/tsconfig.spec.json",
     "codewatch": "nodemon --watch \"./src/**/*.ts\" -r dotenv/config --exec \"ts-node-dev\" src/index.ts",
     "tsc": "tsc",
