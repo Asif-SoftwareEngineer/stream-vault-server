@@ -7,9 +7,13 @@ export interface IVideo {
   thumbnail: string
   category: string
   tags?: string[]
-  likes?: string[]
-  dislikes?: string[]
+  reactions?: IReacion[]
   comments?: string[]
   filePath: string
   duration?: number
+}
+
+export interface IReacion {
+  reasonType: string
+  reactingUserId: string
 }

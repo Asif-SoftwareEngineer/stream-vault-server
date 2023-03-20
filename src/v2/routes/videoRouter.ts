@@ -8,8 +8,12 @@ import { IVideo } from '../../models/video'
 
 const router = Router()
 
+interface CustomRequest extends Request {
+  checkIfUserExistsWithThisReaction?: any
+}
+
 // //Define a middleware function for validation
-const validateData = (req: Request, res: Response, next: NextFunction) => {
+const validateVideoAddRequest = (req: Request, res: Response, next: NextFunction) => {
   const data = req.body
 
   if (
@@ -25,6 +29,132 @@ const validateData = (req: Request, res: Response, next: NextFunction) => {
     })
   } else {
     next()
+  }
+}
+
+const validateVideoReactRequest = (req: Request, res: Response, next: NextFunction) => {
+  const { userId, channelId, videoId, reActingUserId, reactionType } = req.params
+  if (!userId || !channelId || !videoId || !reActingUserId || !reactionType) {
+    res.status(400).send({ message: 'Invalid/missing request parameters specified!' })
+  } else {
+    if (reActingUserId === 'visitor') {
+      // capture the IP in case of a site visitor
+      let ip: string = ''
+      if (req.headers['x-forwarded-for']) {
+        ip = (req.headers['x-forwarded-for'] as string).split(',')[0]
+      } else if (req.socket && req.socket.remoteAddress) {
+        ip = req.socket.remoteAddress
+      } else {
+        ip = req.ip
+      }
+      req.params.reActingUserId = ip
+    }
+
+    next()
+  }
+}
+
+const reactionAlreayExists = async (
+  req: CustomRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { userId, channelId, videoId, reActingUserId, reactionType } = req.params
+
+    const pipeline = [
+      {
+        $match: {
+          userId: userId,
+          'channels.videos': { $exists: true },
+        },
+      },
+      // Unwind the channels array to create a separate document for each channel
+      {
+        $unwind: '$channels',
+      },
+      // Unwind the videos array to create a separate document for each video
+      {
+        $unwind: '$channels.videos',
+      },
+      {
+        $unwind: '$channels.videos.reactions',
+      },
+      {
+        $match: {
+          'channels.channelId': channelId,
+          'channels.videos.videoId': videoId,
+          'channels.videos.reactions': { $exists: true, $ne: [] },
+        },
+      },
+      {
+        $match: {
+          'channels.videos.reactions.reactingUserId': reActingUserId,
+          'channels.videos.reactions.reactionType': reactionType,
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          title: '$channels.videos.title',
+        },
+      },
+    ]
+
+    const vidWithReaction = await userModel.aggregate(pipeline).exec()
+
+    req.checkIfUserExistsWithThisReaction = vidWithReaction.length > 0 ? true : false
+    next()
+  } catch (error) {
+    console.error(error)
+    res.status(500).send({ message: 'An error occurred while processing request.' })
+  }
+}
+
+const toggleLikeDislikeReaction = async (
+  req: CustomRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { userId, channelId, videoId, reActingUserId, reactionType } = req.params
+
+    const deletableOppositeReaction = reactionType === 'like' ? 'dislike' : 'like'
+
+    if (reactionType === 'like' || reactionType === 'dislike') {
+      // Like/dislike reaction does not exist
+
+      //the reaction exists so we need to delete it
+      const reactionToRemove = {
+        reactionType: deletableOppositeReaction,
+        reactingUserId: reActingUserId,
+      }
+
+      await userModel.findOneAndUpdate(
+        {
+          userId: userId,
+          'channels.channelId': channelId,
+          'channels.videos.videoId': videoId,
+        },
+        {
+          $pull: {
+            'channels.$[channel].videos.$[video].reactions': reactionToRemove,
+          },
+        },
+        {
+          arrayFilters: [
+            { 'channel.channelId': channelId },
+            { 'video.videoId': videoId },
+          ],
+          new: true,
+        }
+      )
+    }
+
+    next()
+  } catch (error) {
+    console.error(error)
+    res.status(500).send({ message: 'An error occurred while processing request.' })
   }
 }
 
@@ -49,7 +179,68 @@ const isUserandChannelExisting = (req: Request, res: Response, next: NextFunctio
   )
 }
 
-router.get('/:userId', async (req: Request, res: Response) => {
+const getTotalReactionsWithLikesAndDislikes = async (
+  channelId: string,
+  videoId: string,
+  objLikesDislikes: any
+) => {
+  const pipeline = [
+    {
+      $match: {
+        'channels.videos': { $exists: true },
+      },
+    },
+    // Unwind the channels array to create a separate document for each channel
+    {
+      $unwind: '$channels',
+    },
+    // Unwind the videos array to create a separate document for each video
+    {
+      $unwind: '$channels.videos',
+    },
+    {
+      $match: {
+        'channels.channelId': channelId,
+        'channels.videos.videoId': videoId,
+        'channels.videos.reactions': { $exists: true, $ne: [] },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        title: '$channels.videos.title',
+        likes: {
+          $size: {
+            $filter: {
+              input: '$channels.videos.reactions',
+              cond: { $eq: ['$$this.reactionType', 'like'] },
+            },
+          },
+        },
+        disLikes: {
+          $size: {
+            $filter: {
+              input: '$channels.videos.reactions',
+              cond: { $eq: ['$$this.reactionType', 'dislike'] },
+            },
+          },
+        },
+      },
+    },
+  ]
+
+  const videoWithAggregateReactions = await userModel.aggregate(pipeline).exec()
+
+  if (!videoWithAggregateReactions) {
+  } else {
+    if (videoWithAggregateReactions.length) {
+      objLikesDislikes.Likes = videoWithAggregateReactions[0].likes
+      objLikesDislikes.Dislikes = videoWithAggregateReactions[0].disLikes
+    }
+  }
+}
+
+router.get('/', async (req: Request, res: Response) => {
   const serverUrl: string = `${req.protocol}://${req.get('host')}`
 
   const pipeline = [
@@ -71,6 +262,8 @@ router.get('/:userId', async (req: Request, res: Response) => {
     {
       $project: {
         _id: 0,
+        userId: 1,
+        channelId: '$channels.channelId',
         videoId: '$channels.videos.videoId',
         userName: '$streamVault_username',
         channelName: '$channels.name',
@@ -80,9 +273,22 @@ router.get('/:userId', async (req: Request, res: Response) => {
         thumbnail: {
           $concat: [serverUrl, '/thumbnails/vidz/', '$channels.videos.thumbnail'],
         },
-        likes: '$channels.videos.likes',
-        dislikes: '$channels.videos.dislikes',
-        comments: '$channels.videos.comments',
+        likes: {
+          $size: {
+            $filter: {
+              input: '$channels.videos.reactions',
+              cond: { $eq: ['$$this.reactionType', 'like'] },
+            },
+          },
+        },
+        disLikes: {
+          $size: {
+            $filter: {
+              input: '$channels.videos.reactions',
+              cond: { $eq: ['$$this.reactionType', 'dislike'] },
+            },
+          },
+        },
       },
     },
   ]
@@ -102,46 +308,9 @@ router.get('/:userId', async (req: Request, res: Response) => {
   }
 })
 
-router.get('/', async (req: Request, res: Response) => {
-  // const videos = await userModel.aggregate([
-  //   { $unwind: '$channels' },
-  //   { $unwind: '$channels.videos' },
-  //   { $project: { _id: 0, video: '$channels.videos' } },
-  // ])
-
-  const videos = await userModel.aggregate([
-    { $unwind: '$channels' },
-    { $unwind: '$channels.videos' },
-    {
-      $lookup: {
-        from: 'channels',
-        localField: 'channels._id',
-        foreignField: '_id',
-        as: 'channel',
-      },
-    },
-    { $unwind: '$channel' },
-    {
-      $project: {
-        user_name: '$pichain_username',
-        channel_name: '$channel.name',
-        video: '$channels.videos',
-      },
-    },
-  ])
-
-  if (videos === undefined) {
-    res.status(404).send({
-      message: 'No videos found!',
-    })
-  } else {
-    res.status(200).send({ videos })
-  }
-})
-
 router.post(
   '/add/:userId/:channelId',
-  validateData,
+  validateVideoAddRequest,
   isUserandChannelExisting,
   (req: Request, res: Response) => {
     const videoObj = req.body as IVideo
@@ -173,6 +342,145 @@ router.post(
         }
       }
     )
+  }
+)
+
+router.post(
+  '/submitReaction/:userId/:channelId/:videoId/:reActingUserId/:reactionType',
+  validateVideoReactRequest,
+  reactionAlreayExists,
+  toggleLikeDislikeReaction,
+  async (req: CustomRequest, res: Response) => {
+    try {
+      let obj = {
+        Likes: Number,
+        Dislikes: Number,
+      }
+
+      if (!req.checkIfUserExistsWithThisReaction) {
+        //there is no specific reaction, so we need to add one
+
+        const reaction = {
+          reactionType: req.params.reactionType,
+          reactingUserId: req.params.reActingUserId,
+        }
+
+        const updatedUser = await userModel.findOneAndUpdate(
+          {
+            userId: req.params.userId,
+            'channels.channelId': req.params.channelId,
+            'channels.videos.videoId': req.params.videoId,
+          },
+          {
+            $addToSet: {
+              'channels.$[channel].videos.$[video].reactions': reaction,
+            },
+          },
+          {
+            arrayFilters: [
+              {
+                'channel.channelId': req.params.channelId,
+              },
+              { 'video.videoId': req.params.videoId },
+            ],
+            upsert: true,
+            new: true,
+          }
+        )
+
+        if (!updatedUser) {
+          res.status(500).send({ message: 'Reaction to the video failed!' })
+        } else {
+          await getTotalReactionsWithLikesAndDislikes(
+            req.params.channelId,
+            req.params.videoId,
+            obj
+          )
+        }
+
+        res.status(200).send({
+          status: 200,
+          reactionType: reaction.reactionType,
+          message: 'Reaction added to the video.',
+          likes: obj.Likes,
+          dislikes: obj.Dislikes,
+        })
+      } else {
+        res.status(409).send({
+          message: `Reaction already exists from the user: ${req.params.reActingUserId}.`,
+        })
+      }
+    } catch (error) {
+      // handle any errors that may occur during the database update operation
+      console.error(error)
+      res.status(500).send({ message: 'An error occurred while updating the database.' })
+    }
+  }
+)
+
+router.post(
+  '/withdrawReaction/:userId/:channelId/:videoId/:reActingUserId/:reactionType',
+  validateVideoReactRequest,
+  reactionAlreayExists,
+  async (req: CustomRequest, res: Response) => {
+    try {
+      let obj = {
+        Likes: Number,
+        Dislikes: Number,
+      }
+
+      if (req.checkIfUserExistsWithThisReaction) {
+        const reactionToRemove = {
+          reactionType: req.params.reactionType,
+          reactingUserId: req.params.reActingUserId,
+        }
+
+        const updatedUser = await userModel.findOneAndUpdate(
+          {
+            userId: req.params.userId,
+            'channels.channelId': req.params.channelId,
+            'channels.videos.videoId': req.params.videoId,
+          },
+          {
+            $pull: {
+              'channels.$[channel].videos.$[video].reactions': reactionToRemove,
+            },
+          },
+          {
+            arrayFilters: [
+              { 'channel.channelId': req.params.channelId },
+              { 'video.videoId': req.params.videoId },
+            ],
+            new: true,
+          }
+        )
+
+        if (!updatedUser) {
+          res.status(500).send({ message: 'Reaction to the video failed!' })
+        } else {
+          await getTotalReactionsWithLikesAndDislikes(
+            req.params.channelId,
+            req.params.videoId,
+            obj
+          )
+        }
+
+        res.status(200).send({
+          status: 200,
+          message: 'Reaction withdrawn from the video.',
+          likes: obj.Likes,
+          dislikes: obj.Dislikes,
+        })
+      } else {
+        res.status(200).send({
+          message: `Reaction does not exist from the user: ${req.params.reActingUserId}.`,
+        })
+      }
+    } catch (error) {
+      // handle any errors that may occur during the database update operation
+      console.error(error)
+      res.status(500).send({ message: 'An error occurred while updating the database.' })
+    }
   }
 )
 

@@ -70,7 +70,7 @@ router.get('/registeredUser', async (req: Request, res: Response) => {
 })
 
 router.get('/:userId', async (req: Request, res: Response) => {
-  const userObj = await userModel.findOne({ userId: new ObjectId(req.params.userId) })
+  const userObj = await userModel.findOne({ userId: req.params.userId })
   if (!userObj) {
     res.status(404).send({ message: 'User not found.' })
   } else {
@@ -100,7 +100,6 @@ router.post('/register', async (req: Request, res: Response) => {
 
   userObj.save((err, userObjCreated) => {
     if (err) {
-
       res.send({ status: 500, Message: 'User registration failed!' })
     } else {
       res.send({
@@ -150,7 +149,6 @@ router.post('/member', async (req: Request, res: Response) => {
         }
       )
     } else {
-
       //This is completely a new registration with membership
 
       let userObj = new userModel({
@@ -173,10 +171,8 @@ router.post('/member', async (req: Request, res: Response) => {
 
       userObj.save((err, userObjCreated) => {
         if (err) {
-
           res.send({ status: 500, Message: 'User registration failed!' })
         } else {
-
           res.send({
             status: 200,
             Message: `User [${userObj.pichain_username}] has been registered.`,
