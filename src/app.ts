@@ -20,7 +20,11 @@ app.use(urlencodedParser)
 // }
 // app.use(cors(corsOptions))
 
-app.use(cors())
+app.use(
+  cors({
+    origin: 'https://streamvault.vercel.app/',
+  })
+)
 
 app.use(
   '/thumbnails/channels',
