@@ -15,10 +15,12 @@ let urlencodedParser = bodyParser.urlencoded({ extended: false })
 app.use(jsonParser)
 app.use(urlencodedParser)
 
-let corsOptions = {
-  origin: 'http://localhost:4200',
-}
-app.use(cors(corsOptions))
+// let corsOptions = {
+//   origin: 'http://localhost:4200',
+// }
+// app.use(cors(corsOptions))
+
+app.use(cors())
 
 app.use(
   '/thumbnails/channels',
