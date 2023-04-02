@@ -22,7 +22,7 @@ app.use(urlencodedParser)
 
 app.use(
   cors({
-    origin: 'https://streamvault.vercel.app',
+    origin: '*',
   })
 )
 
