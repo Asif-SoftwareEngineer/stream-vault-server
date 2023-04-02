@@ -5,11 +5,12 @@ export const MongoUri =
   'mongodb+srv://asifj:Allah786online$$@videovaultdb.vz1cpzp.mongodb.net/videovault_db'
 //'mongodb://localhost:27017/videovault_db'
 //  'mongodb+srv://asifj:Allah786online$$@videovaultdb.vz1cpzp.mongodb.net/videovault_db'
-export const session_secret = process.env.SESSION_SECRET || 'This is my session secret'
+export const session_secret = process.env.SESSION_SECRET || '17092013'
 export const pi_api_key =
   process.env.PI_API_KEY ||
   'vxjwy7zscab2oc4u2vboyezktln264tgcajyyirvybiq2cmydu80l7ww7ie5yts6'
 export const platform_api_url = process.env.PLATFORM_API_URL || 'https://api.minepi.com'
+export const server_url = process.env.ServerUrl || 'http://localhost:3000'
 export const mongo_host = process.env.MONGO_HOST || 'videovaultdb.vz1cpzp.mongodb.net'
 export const mongo_db_name = process.env.MONGODB_DATABASE_NAME || 'videovault_db'
 export const mongo_user = process.env.MONGODB_USERNAME || 'Allah786online$$'

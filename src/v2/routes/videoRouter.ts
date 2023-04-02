@@ -6,13 +6,29 @@ import * as uploadController from './../../controllers/fileUpload-controller'
 import { IUser, userModel } from '../../models/user'
 import { IVideo } from '../../models/video'
 
+//import { AuthenticatingRequest } from '../../models/customRequests'
+
 const router = Router()
 
 interface CustomRequest extends Request {
   checkIfUserExistsWithThisReaction?: any
 }
 
-// //Define a middleware function for validation
+const validateDataForGetAllVidzRequest = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  if (!req.params.userId) {
+    res.status(400).json({
+      message: 'UserId is missing.',
+    })
+  } else {
+    req.params.userId = extractTheIP(req)
+    next()
+  }
+}
+
 const validateVideoAddRequest = (req: Request, res: Response, next: NextFunction) => {
   const data = req.body
 
@@ -37,21 +53,22 @@ const validateVideoReactRequest = (req: Request, res: Response, next: NextFuncti
   if (!userId || !channelId || !videoId || !reActingUserId || !reactionType) {
     res.status(400).send({ message: 'Invalid/missing request parameters specified!' })
   } else {
-    if (reActingUserId === 'visitor') {
-      // capture the IP in case of a site visitor
-      let ip: string = ''
-      if (req.headers['x-forwarded-for']) {
-        ip = (req.headers['x-forwarded-for'] as string).split(',')[0]
-      } else if (req.socket && req.socket.remoteAddress) {
-        ip = req.socket.remoteAddress
-      } else {
-        ip = req.ip
-      }
-      req.params.reActingUserId = ip
-    }
-
+    req.params.userId = extractTheIP(req)
     next()
   }
+}
+
+function extractTheIP(req: Request): string {
+  let ip: string = ''
+
+  if (req.headers['x-forwarded-for']) {
+    ip = (req.headers['x-forwarded-for'] as string).split(',')[0]
+  } else if (req.socket && req.socket.remoteAddress) {
+    ip = req.socket.remoteAddress
+  } else {
+    ip = req.ip
+  }
+  return req.params.userId === 'visitor' ? `vis-${ip}` : req.params.userId
 }
 
 const reactionAlreayExists = async (
@@ -240,73 +257,88 @@ const getTotalReactionsWithLikesAndDislikes = async (
   }
 }
 
-router.get('/', async (req: Request, res: Response) => {
-  const serverUrl: string = `${req.protocol}://${req.get('host')}`
+router.get(
+  '/:userId',
+  validateDataForGetAllVidzRequest,
+  async (req: Request, res: Response) => {
+    const serverUrl: string = `${req.protocol}://${req.get('host')}`
+    const watchingUserId: string = req.params.userId
 
-  const pipeline = [
-    // Match documents that have at least one video
-    {
-      $match: {
-        'channels.videos': { $exists: true },
-      },
-    },
-    // Unwind the channels array to create a separate document for each channel
-    {
-      $unwind: '$channels',
-    },
-    // Unwind the videos array to create a separate document for each video
-    {
-      $unwind: '$channels.videos',
-    },
-    // Project the fields you want to include in the output
-    {
-      $project: {
-        _id: 0,
-        userId: 1,
-        channelId: '$channels.channelId',
-        videoId: '$channels.videos.videoId',
-        userName: '$streamVault_username',
-        channelName: '$channels.name',
-        title: '$channels.videos.title',
-        description: '$channels.videos.description',
-        url: { $concat: [serverUrl, '/v2/stream/', '$channels.videos.filePath'] },
-        thumbnail: {
-          $concat: [serverUrl, '/thumbnails/vidz/', '$channels.videos.thumbnail'],
+    const pipeline = [
+      // Match documents that have at least one video
+      {
+        $match: {
+          'channels.videos': { $exists: true },
         },
-        likes: {
-          $size: {
-            $filter: {
-              input: '$channels.videos.reactions',
-              cond: { $eq: ['$$this.reactionType', 'like'] },
+      },
+      // Unwind the channels array to create a separate document for each channel
+      {
+        $unwind: '$channels',
+      },
+      // Unwind the videos array to create a separate document for each video
+      {
+        $unwind: '$channels.videos',
+      },
+      // Project the fields you want to include in the output
+      {
+        $project: {
+          _id: 0,
+          userId: 1,
+          channelId: '$channels.channelId',
+          videoId: '$channels.videos.videoId',
+          userName: '$streamVault_username',
+          channelName: '$channels.name',
+          title: '$channels.videos.title',
+          description: '$channels.videos.description',
+          url: {
+            $concat: [
+              serverUrl,
+              '/v2/stream/',
+              '$channels.videos.filePath',
+              '/',
+              watchingUserId,
+              '/',
+              '$channels.videos.videoId',
+            ],
+          },
+          thumbnail: {
+            $concat: [serverUrl, '/thumbnails/vidz/', '$channels.videos.thumbnail'],
+          },
+          likes: {
+            $size: {
+              $filter: {
+                input: '$channels.videos.reactions',
+                cond: { $eq: ['$$this.reactionType', 'like'] },
+              },
+            },
+          },
+          disLikes: {
+            $size: {
+              $filter: {
+                input: '$channels.videos.reactions',
+                cond: { $eq: ['$$this.reactionType', 'dislike'] },
+              },
             },
           },
         },
-        disLikes: {
-          $size: {
-            $filter: {
-              input: '$channels.videos.reactions',
-              cond: { $eq: ['$$this.reactionType', 'dislike'] },
-            },
-          },
-        },
       },
-    },
-  ]
+    ]
 
-  const videosList = await userModel.aggregate(pipeline).exec()
+    const videosList = await userModel.aggregate(pipeline).exec()
 
-  if (videosList === undefined) {
-    res.status(404).send({
-      status: 404,
-      message: 'No videos found for the specified userId.',
-    })
-  } else {
-    res.status(200).send({
-      status: 200,
-      videosList,
-    })
+    if (videosList === undefined) {
+      res.status(404).send({
+        status: 404,
+        message: 'No videos found for the specified userId.',
+      })
+    } else {
+      res.status(200).send({
+        status: 200,
+        videosList,
+      })
+    }
   }
-})
+)
 
 router.post(
   '/add/:userId/:channelId',

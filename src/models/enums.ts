@@ -43,3 +43,12 @@ export enum Gender {
   Male = 'male',
   Female = 'female',
 }
+
+export enum LogEventType {
+  StreamInit = 'video_start',
+  StreamDuation = 'view_duration',
+  ReAuthenticate = 're_authenticate',
+  SignOut = 'sign_out',
+  CancelPayment = 'cancel_payment',
+  StreamVaultPaymentApproved = 'dev_payment_approved',
+}

@@ -17,6 +17,7 @@ export interface IPiUser {
   username: string
   valid_timestamp: number
   iso8601: string
+  signin_date: string
 }
 
 const piUserSchema = new Schema<IPiUser>({
@@ -25,6 +26,7 @@ const piUserSchema = new Schema<IPiUser>({
   username: { type: String, required: true },
   valid_timestamp: { type: Number, required: true },
   iso8601: { type: String, required: true },
+  signin_date: { type: String, required: true },
 })
 
 export const piUserModel = model<IPiUser>('Signin', piUserSchema)

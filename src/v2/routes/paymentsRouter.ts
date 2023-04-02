@@ -2,7 +2,9 @@ import axios from 'axios'
 import { Request, Response, Router } from 'express'
 import * as moment from 'moment'
 
+import * as config from '../../config'
 import { errorLogger, infoLogger } from '../../loggers'
+import { LogEventType } from '../../models/enums'
 import { PaymentDTO, paymentModel } from '../../models/payment'
 import { IUser, userModel } from '../../models/user'
 import platformAPIClient from '../../platformApiClient'
@@ -166,30 +168,44 @@ router.post('/complete', async (req, res) => {
 
 //handle the cancelled payment
 router.post('/cancelled_payment', async (req, res) => {
-  const paymentIdCB = req.body.paymentId
+  try {
+    const paymentIdCB = req.body.paymentId
+    const paymentObj = await platformAPIClient.get<PaymentDTO>(
+      `/v2/payments/${paymentIdCB}`
+    )
+    const { data: currentPayment } = paymentObj
 
-  infoLogger.info('cancel payment api called back')
+    await paymentModel.findOneAndUpdate(
+      { paymentId: paymentIdCB },
+      {
+        $set: {
+          paid: false,
+        },
+      }
+    )
 
-  /*
-    implement your logic here
-    e.g. mark the order record to cancelled, etc...
-  */
+    // Make a POST request to the /userAction endpoint with the data from the request body
 
-  await paymentModel.findOneAndUpdate(
-    { paymentId: paymentIdCB },
-    {
-      $set: {
-        paymentId: paymentIdCB,
-        paid: false,
-      },
-    }
-  )
+    const userId: string = currentPayment.user_uid
+    const evnetType: string = LogEventType.CancelPayment
 
-  res.status(200).json({
-    status: 200,
-    paymentfor: 'membership',
-    message: `Payment has been cancelled: ${paymentIdCB}`,
-  })
+    const url = config.server_url
+
+    await axios.post(`${url}/v2/log/userAction`, {
+      userId,
+      evnetType,
+    })
+
+    res.status(200).json({
+      status: 200,
+      paymentfor: 'membership',
+      message: `Payment has been cancelled: ${paymentIdCB}`,
+    })
+
+    infoLogger.info(`Payment for User [ ${userId} ] has been cancelled.`)
+  } catch (error) {
+    errorLogger.error(error)
+  }
 })
 
 async function createMembership(paramRegDTO: any): Promise<boolean> {

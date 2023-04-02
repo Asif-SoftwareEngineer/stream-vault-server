@@ -8,14 +8,17 @@ import api from './api'
 
 const app = express()
 
-var jsonParser = bodyParser.json()
+let jsonParser = bodyParser.json()
 
-var urlencodedParser = bodyParser.urlencoded({ extended: false })
+let urlencodedParser = bodyParser.urlencoded({ extended: false })
 
 app.use(jsonParser)
 app.use(urlencodedParser)
 
-app.use(cors())
+let corsOptions = {
+  origin: 'http://localhost:4200',
+}
+app.use(cors(corsOptions))
 
 app.use(
   '/thumbnails/channels',
