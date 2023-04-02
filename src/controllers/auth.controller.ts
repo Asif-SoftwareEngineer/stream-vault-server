@@ -37,13 +37,8 @@ export const signin = async (req: Request, res: Response) => {
       { upsert: true, new: true }
     )
 
-    const tokenExpiryTime =
-      me.credentials.valid_until.timestamp - Math.floor(Date.now() / 1000)
-
-      console.log('Token Expiry:-' + tokenExpiryTime)
-
     const appToken = jwt.sign({ id: me.uid }, config.session_secret, {
-      expiresIn: tokenExpiryTime,
+      expiresIn: 86400,
     })
 
     if (currentUser) {
