@@ -7,8 +7,6 @@ import * as uploadController from './../../controllers/fileUpload-controller'
 import { IUser, userModel } from '../../models/user'
 import { IVideo } from '../../models/video'
 
-//import { AuthenticatingRequest } from '../../models/customRequests'
-
 const router = Router()
 
 interface CustomRequest extends Request {
@@ -25,7 +23,7 @@ const validateDataForGetAllVidzRequest = (
       message: 'UserId is missing.',
     })
   } else {
-    const ip = getClientIp(req)! // extractTheIP(req)
+    const ip = getClientIp(req)!
     req.params.userId = req.params.userId === 'visitor' ? `vis-${ip}` : req.params.userId
     next()
   }
@@ -55,16 +53,11 @@ const validateVideoReactRequest = (req: Request, res: Response, next: NextFuncti
   if (!userId || !channelId || !videoId || !reActingUserId || !reactionType) {
     res.status(400).send({ message: 'Invalid/missing request parameters specified!' })
   } else {
-    const ip = getClientIp(req)! //extractTheIP(req)
+    const ip = getClientIp(req)!
     req.params.userId = req.params.userId === 'visitor' ? `vis-${ip}` : req.params.userId
     next()
   }
 }
-
-// function extractTheIP(req: Request): string {
-//   const ip = req.clientIp!
-//   return ip
-// }
 
 const reactionAlreayExists = async (
   req: CustomRequest,

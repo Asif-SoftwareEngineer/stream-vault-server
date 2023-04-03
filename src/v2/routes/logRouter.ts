@@ -13,7 +13,7 @@ const router = Router()
 router.post('/userAction', async (req: Request, res: Response) => {
   const { userId, eventType } = req.body
 
-  const ip: string = getClientIp(req)! // extractTheIP(req)
+  const ip: string = getClientIp(req)!
   const country: string = 'aus'
   const city: string = 'melb'
   const timestamp = new Date().toISOString()
@@ -31,7 +31,6 @@ router.post('/userAction', async (req: Request, res: Response) => {
   try {
     await newLogUser.save()
 
-    console.log('Log user added successfully')
     res.status(200).send('Log user added successfully')
   } catch (error) {
     console.error(error)
@@ -43,12 +42,10 @@ router.post('/userAction', async (req: Request, res: Response) => {
 router.post('/videoAction', async (req: Request, res: Response) => {
   const { userId, eventType, videoId } = req.body
 
-  const ip: string = getClientIp(req)! // extractTheIP(req)
+  const ip: string = getClientIp(req)!
   const country: string = 'aus'
   const city: string = 'melb'
   const timestamp = new Date().toISOString()
-
-  console.log('this is the ip:' + ip)
 
   // Create a new log user object with the data from the request body
   const newLogVideo = new logVideoModel({
@@ -64,7 +61,6 @@ router.post('/videoAction', async (req: Request, res: Response) => {
   try {
     await newLogVideo.save()
 
-    console.log('Video logged successfully')
     res.status(200).send('Video Logged successfully')
   } catch (error) {
     console.error(error)
