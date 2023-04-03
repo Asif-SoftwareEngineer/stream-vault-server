@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { Request, Response, Router } from 'express'
 import * as moment from 'moment'
+import { getClientIp } from 'request-ip'
 
 import * as config from '../../config'
 import { errorLogger, infoLogger } from '../../loggers'
@@ -106,6 +107,17 @@ router.post('/approve', async (req: Request, res: Response) => {
 
     const paymentObjCreated = await payment.save()
 
+    const userId: string = currentPayment.user_uid
+    const evnetType: string = LogEventType.StreamVaultPaymentApproved
+
+    const url = config.server_url
+    const clientIp: string = getClientIp(req)!
+    await axios.post(`${url}/v2/log/userAction`, {
+      userId,
+      evnetType,
+      clientIp,
+    })
+
     // let Pi Servers know that you're ready
     infoLogger.info('About to call the approve api at pi blockchain testnet')
 
@@ -190,10 +202,11 @@ router.post('/cancelled_payment', async (req, res) => {
     const evnetType: string = LogEventType.CancelPayment
 
     const url = config.server_url
-
+    const clientIp: string = getClientIp(req)!
     await axios.post(`${url}/v2/log/userAction`, {
       userId,
       evnetType,
+      clientIp,
     })
 
     res.status(200).json({

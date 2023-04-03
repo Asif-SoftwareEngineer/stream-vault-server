@@ -14,6 +14,6 @@ export interface IVideo {
 }
 
 export interface IReacion {
-  reasonType: string
+  reactionType: string
   reactingUserId: string
 }
