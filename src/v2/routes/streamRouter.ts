@@ -3,6 +3,7 @@ import * as path from 'path'
 
 import axios from 'axios'
 import { NextFunction, Request, Response, Router } from 'express'
+import { getClientIp } from 'request-ip'
 
 import * as config from '../../config'
 import { errorLogger } from '../../loggers'
@@ -147,11 +148,12 @@ router.get(
           const videoId: string = req.params.videoId
 
           const url = config.server_url
-
+          const clientIp: string = getClientIp(req)
           await axios.post(`${url}/v2/log/videoAction`, {
             userId,
             eventType,
             videoId,
+            clientIp,
           })
         } catch (error) {
           errorLogger.error(error)

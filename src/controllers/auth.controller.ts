@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { Request, Response } from 'express'
 import * as jwt from 'jsonwebtoken'
+import { getClientIp } from 'request-ip'
 
 import * as config from '../config'
 import { errorLogger, infoLogger } from '../loggers'
@@ -40,9 +41,11 @@ export const signin = async (req: Request, res: Response) => {
     })
 
     if (currentUser) {
+      const clientIp: string = getClientIp(req)
       await axios.post(`${config.server_url}/v2/log/userAction`, {
         userId: me.uid,
         eventType: LogEventType.ReAuthenticate,
+        clientIp,
       })
 
       infoLogger.info(`User [ ${me.uid} ] re-authenticated.`)

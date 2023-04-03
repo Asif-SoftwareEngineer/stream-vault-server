@@ -1,9 +1,6 @@
 import { Request, Response, Router } from 'express'
 
-import { getClientIp } from '../../controllers/ipCapture'
 import { logUserModel, logVideoModel } from '../../models/log'
-
-//import { getClientIp } from 'request-ip'
 
 const router = Router()
 
@@ -13,9 +10,8 @@ const router = Router()
 // }
 
 router.post('/userAction', async (req: Request, res: Response) => {
-  const { userId, eventType } = req.body
+  const { userId, eventType, clientIp } = req.body
 
-  const ip: string = getClientIp(req)!
   const country: string = 'aus'
   const city: string = 'melb'
   const timestamp = new Date().toISOString()
@@ -23,7 +19,7 @@ router.post('/userAction', async (req: Request, res: Response) => {
   // Create a new log user object with the data from the request body
   const newLogUser = new logUserModel({
     userId,
-    ip,
+    clientIp,
     country,
     city,
     eventType,
@@ -42,9 +38,8 @@ router.post('/userAction', async (req: Request, res: Response) => {
 })
 
 router.post('/videoAction', async (req: Request, res: Response) => {
-  const { userId, eventType, videoId } = req.body
+  const { userId, eventType, videoId, clientIp } = req.body
 
-  const ip: string = getClientIp(req)!
   const country: string = 'aus'
   const city: string = 'melb'
   const timestamp = new Date().toISOString()
@@ -52,7 +47,7 @@ router.post('/videoAction', async (req: Request, res: Response) => {
   // Create a new log user object with the data from the request body
   const newLogVideo = new logVideoModel({
     userId,
-    ip,
+    clientIp,
     country,
     city,
     eventType,
