@@ -15,11 +15,12 @@ router.post('/userAction', async (req: Request, res: Response) => {
   const country: string = 'aus'
   const city: string = 'melb'
   const timestamp = new Date().toISOString()
+  const ip: string = clientIp
 
   // Create a new log user object with the data from the request body
   const newLogUser = new logUserModel({
     userId,
-    clientIp,
+    ip,
     country,
     city,
     eventType,
@@ -43,11 +44,12 @@ router.post('/videoAction', async (req: Request, res: Response) => {
   const country: string = 'aus'
   const city: string = 'melb'
   const timestamp = new Date().toISOString()
+  const ip: string = clientIp
 
   // Create a new log user object with the data from the request body
   const newLogVideo = new logVideoModel({
     userId,
-    clientIp,
+    ip,
     country,
     city,
     eventType,
