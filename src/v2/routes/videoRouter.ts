@@ -1,6 +1,7 @@
 import { randomBytes } from 'crypto'
 
 import { NextFunction, Request, Response, Router } from 'express'
+import { getClientIp } from 'request-ip'
 
 import * as uploadController from './../../controllers/fileUpload-controller'
 import { IUser, userModel } from '../../models/user'
@@ -24,7 +25,7 @@ const validateDataForGetAllVidzRequest = (
       message: 'UserId is missing.',
     })
   } else {
-    const ip = extractTheIP(req)
+    const ip = getClientIp(req)! // extractTheIP(req)
     req.params.userId = req.params.userId === 'visitor' ? `vis-${ip}` : req.params.userId
     next()
   }
@@ -54,16 +55,16 @@ const validateVideoReactRequest = (req: Request, res: Response, next: NextFuncti
   if (!userId || !channelId || !videoId || !reActingUserId || !reactionType) {
     res.status(400).send({ message: 'Invalid/missing request parameters specified!' })
   } else {
-    const ip = extractTheIP(req)
+    const ip = getClientIp(req)! //extractTheIP(req)
     req.params.userId = req.params.userId === 'visitor' ? `vis-${ip}` : req.params.userId
     next()
   }
 }
 
-function extractTheIP(req: Request): string {
-  const ip = req.clientIp!
-  return ip
-}
+// function extractTheIP(req: Request): string {
+//   const ip = req.clientIp!
+//   return ip
+// }
 
 const reactionAlreayExists = async (
   req: CustomRequest,

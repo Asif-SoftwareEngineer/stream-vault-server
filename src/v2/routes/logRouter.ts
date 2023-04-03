@@ -1,18 +1,19 @@
 import { Request, Response, Router } from 'express'
+import { getClientIp } from 'request-ip'
 
 import { logUserModel, logVideoModel } from '../../models/log'
 
 const router = Router()
 
-function extractTheIP(req: Request): string {
-  const ip = req.clientIp!
-  return ip
-}
+// function extractTheIP(req: Request): string {
+//   const ip = req.clientIp!
+//   return ip
+// }
 
 router.post('/userAction', async (req: Request, res: Response) => {
   const { userId, eventType } = req.body
 
-  const ip: string = extractTheIP(req)
+  const ip: string = getClientIp(req)! // extractTheIP(req)
   const country: string = 'aus'
   const city: string = 'melb'
   const timestamp = new Date().toISOString()
@@ -42,7 +43,7 @@ router.post('/userAction', async (req: Request, res: Response) => {
 router.post('/videoAction', async (req: Request, res: Response) => {
   const { userId, eventType, videoId } = req.body
 
-  const ip: string = extractTheIP(req)
+  const ip: string = getClientIp(req)! // extractTheIP(req)
   const country: string = 'aus'
   const city: string = 'melb'
   const timestamp = new Date().toISOString()
