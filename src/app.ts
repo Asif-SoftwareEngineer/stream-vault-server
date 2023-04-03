@@ -3,6 +3,7 @@ import * as path from 'path'
 import * as bodyParser from 'body-parser'
 import * as cors from 'cors'
 import * as express from 'express'
+import requestIp from 'request-ip'
 
 import api from './api'
 
@@ -25,6 +26,13 @@ app.use(
     origin: '*',
   })
 )
+
+declare module 'express' {
+  interface Request {
+    clientIp?: string;
+  }
+}
+app.use(requestIp.mw())
 
 app.use(
   '/thumbnails/channels',

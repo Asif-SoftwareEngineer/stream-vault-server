@@ -11,8 +11,6 @@ import platformAPIClient from '../platformApiClient'
 export const signin = async (req: Request, res: Response) => {
   const token = req.params.token
 
-  console.log('Token:' + token)
-
   if (!token) {
     return res.status(401).json({ error: 'Invalid access token' })
   }

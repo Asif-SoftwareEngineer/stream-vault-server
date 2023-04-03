@@ -24,7 +24,8 @@ const validateDataForGetAllVidzRequest = (
       message: 'UserId is missing.',
     })
   } else {
-    req.params.userId = extractTheIP(req)
+    const ip = extractTheIP(req)
+    req.params.userId = req.params.userId === 'visitor' ? `vis-${ip}` : req.params.userId
     next()
   }
 }
@@ -53,22 +54,15 @@ const validateVideoReactRequest = (req: Request, res: Response, next: NextFuncti
   if (!userId || !channelId || !videoId || !reActingUserId || !reactionType) {
     res.status(400).send({ message: 'Invalid/missing request parameters specified!' })
   } else {
-    req.params.userId = extractTheIP(req)
+    const ip = extractTheIP(req)
+    req.params.userId = req.params.userId === 'visitor' ? `vis-${ip}` : req.params.userId
     next()
   }
 }
 
 function extractTheIP(req: Request): string {
-  let ip: string = ''
-
-  if (req.headers['x-forwarded-for']) {
-    ip = (req.headers['x-forwarded-for'] as string).split(',')[0]
-  } else if (req.socket && req.socket.remoteAddress) {
-    ip = req.socket.remoteAddress
-  } else {
-    ip = req.ip
-  }
-  return req.params.userId === 'visitor' ? `vis-${ip}` : req.params.userId
+  const ip = req.clientIp
+  return ip
 }
 
 const reactionAlreayExists = async (

@@ -5,18 +5,7 @@ import { logUserModel, logVideoModel } from '../../models/log'
 const router = Router()
 
 function extractTheIP(req: Request): string {
-  let ip: string = ''
-
-  // capture the IP in case of a site visitor
-
-  if (req.headers['x-forwarded-for']) {
-    ip = (req.headers['x-forwarded-for'] as string).split(',')[0]
-  } else if (req.socket && req.socket.remoteAddress) {
-    ip = req.socket.remoteAddress
-  } else {
-    ip = req.ip
-  }
-
+  const ip = req.clientIp
   return ip
 }
 
