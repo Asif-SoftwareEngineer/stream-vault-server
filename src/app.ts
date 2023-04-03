@@ -28,6 +28,8 @@ app.use(
   })
 )
 
+app.set('trust proxy', true)
+
 app.use(
   '/thumbnails/channels',
   express.static(path.join('uploads', 'thumbnails', 'channels'))
