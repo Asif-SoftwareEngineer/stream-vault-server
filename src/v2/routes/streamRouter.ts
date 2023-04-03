@@ -148,7 +148,7 @@ router.get(
           const videoId: string = req.params.videoId
 
           const url = config.server_url
-          const clientIp: string = getClientIp(req)
+          const clientIp: string = getClientIp(req)!
           await axios.post(`${url}/v2/log/videoAction`, {
             userId,
             eventType,

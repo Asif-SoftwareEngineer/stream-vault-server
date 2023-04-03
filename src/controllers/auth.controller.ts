@@ -41,7 +41,7 @@ export const signin = async (req: Request, res: Response) => {
     })
 
     if (currentUser) {
-      const clientIp: string = getClientIp(req)
+      const clientIp: string = getClientIp(req)!
       await axios.post(`${config.server_url}/v2/log/userAction`, {
         userId: me.uid,
         eventType: LogEventType.ReAuthenticate,
@@ -70,10 +70,11 @@ export const signout = async (req: Request, res: Response) => {
     const eventType: string = LogEventType.SignOut
 
     const url = config.server_url
-
+    const clientIp: string = getClientIp(req)!
     await axios.post(`${url}/v2/log/userAction`, {
       userId,
       eventType,
+      clientIp,
     })
 
     infoLogger.info(`User [ ${userId} ] signed out.`)
