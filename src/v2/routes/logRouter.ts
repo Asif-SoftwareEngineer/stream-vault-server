@@ -5,7 +5,7 @@ import { logUserModel, logVideoModel } from '../../models/log'
 const router = Router()
 
 function extractTheIP(req: Request): string {
-  const ip = req.clientIp
+  const ip = req.clientIp!
   return ip
 }
 

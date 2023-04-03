@@ -61,7 +61,7 @@ const validateVideoReactRequest = (req: Request, res: Response, next: NextFuncti
 }
 
 function extractTheIP(req: Request): string {
-  const ip = req.clientIp
+  const ip = req.clientIp!
   return ip
 }
 
