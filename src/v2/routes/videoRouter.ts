@@ -14,13 +14,14 @@ const validateDataForGetAllVidzRequest = (
   res: Response,
   next: NextFunction
 ) => {
-  if (!req.params.userId) {
+  if (!req.params.watchingUserId) {
     res.status(400).json({
       message: 'UserId is missing.',
     })
   } else {
     const ip = getClientIp(req)!
-    req.params.userId = req.params.userId === 'visitor' ? `vis-${ip}` : req.params.userId
+    req.params.watchingUserId =
+      req.params.watchingUserId === 'visitor' ? `vis-${ip}` : req.params.watchingUserId
     next()
   }
 }
