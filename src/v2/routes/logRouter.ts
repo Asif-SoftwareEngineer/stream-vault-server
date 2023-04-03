@@ -1,7 +1,9 @@
 import { Request, Response, Router } from 'express'
-import { getClientIp } from 'request-ip'
 
+import { getClientIp } from '../../controllers/ipCapture'
 import { logUserModel, logVideoModel } from '../../models/log'
+
+//import { getClientIp } from 'request-ip'
 
 const router = Router()
 
