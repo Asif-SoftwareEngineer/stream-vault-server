@@ -89,6 +89,7 @@ router.post('/incomplete', async (req, res) => {
 // approve the current payment
 router.post('/approve', async (req: Request, res: Response) => {
   try {
+    infoLogger.info('inside the approve post method')
     const paymentIdCB = req.body.paymentId
     const paymentObj = await platformAPIClient.get<PaymentDTO>(
       `/v2/payments/${paymentIdCB}`
@@ -104,12 +105,13 @@ router.post('/approve', async (req: Request, res: Response) => {
       cancelled: false,
       created_at: new Date(),
     })
-
+    infoLogger.info('about to create payment object inside approve post method')
     const paymentObjCreated = await payment.save()
 
     const userId: string = currentPayment.user_uid
     const eventType: string = LogEventType.StreamVaultPaymentApproved
 
+    infoLogger.info('about to log the payment approval')
     const url = config.server_url
     const clientIp: string = getClientIp(req)!
     await axios.post(`${url}/v2/log/userAction`, {

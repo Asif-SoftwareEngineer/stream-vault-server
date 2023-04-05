@@ -23,6 +23,17 @@ export const signin = async (req: Request, res: Response) => {
 
     const currentUser = await piUserModel.findOne({ uid: me.uid })
 
+    if (currentUser) {
+      const clientIp: string = getClientIp(req)!
+      await axios.post(`${config.server_url}/v2/log/userAction`, {
+        userId: me.uid,
+        eventType: LogEventType.ReAuthenticate,
+        clientIp,
+      })
+
+      infoLogger.info(`User [ ${me.uid} ] re-authenticated.`)
+    }
+
     await piUserModel.findOneAndUpdate(
       { uid: me.uid },
       {
@@ -40,17 +51,6 @@ export const signin = async (req: Request, res: Response) => {
       expiresIn: 86400,
     })
 
-    if (currentUser) {
-      const clientIp: string = getClientIp(req)!
-      await axios.post(`${config.server_url}/v2/log/userAction`, {
-        userId: me.uid,
-        eventType: LogEventType.ReAuthenticate,
-        clientIp,
-      })
-
-      infoLogger.info(`User [ ${me.uid} ] re-authenticated.`)
-    }
-
     return res.status(200).send({
       status: 200,
       appAccessToken: appToken,
@@ -67,17 +67,21 @@ export const signout = async (req: Request, res: Response) => {
     // Make a POST request to the /userAction endpoint with the data from the request body
 
     const userId: string = req.params.userId
-    const eventType: string = LogEventType.SignOut
+    const currentUser = await piUserModel.findOne({ uid: userId })
 
-    const url = config.server_url
-    const clientIp: string = getClientIp(req)!
-    await axios.post(`${url}/v2/log/userAction`, {
-      userId,
-      eventType,
-      clientIp,
-    })
+    if (currentUser) {
+      const eventType: string = LogEventType.SignOut
+      const url = config.server_url
 
-    infoLogger.info(`User [ ${userId} ] signed out.`)
+      const clientIp: string = getClientIp(req)!
+      await axios.post(`${url}/v2/log/userAction`, {
+        userId,
+        eventType,
+        clientIp,
+      })
+
+      infoLogger.info(`User [ ${userId} ] signed out.`)
+    }
   } catch (error) {
     errorLogger.error(error)
   }
