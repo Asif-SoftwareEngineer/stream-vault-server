@@ -1,13 +1,13 @@
 import axios from 'axios'
 import { Request, Response, Router } from 'express'
-import * as moment from 'moment'
 import { getClientIp } from 'request-ip'
 
 import * as config from '../../config'
 import { errorLogger, infoLogger } from '../../loggers'
-import { LogEventType } from '../../models/enums'
+import { CustomError } from '../../models/customErrorClass'
+import { LogEventType, MembershipType } from '../../models/enums'
 import { PaymentDTO, paymentModel } from '../../models/payment'
-import { IUser, userModel } from '../../models/user'
+import { IUser } from '../../models/user'
 import platformAPIClient from '../../platformApiClient'
 
 const router = Router()
@@ -41,6 +41,8 @@ router.post('/incomplete', async (req, res) => {
         $unwind: '$user',
       },
     ]
+
+    await platformAPIClient.post(`/v2/payments/${paymentIdCB}/complete`, { txid: txidCB })
 
     const filteredPayment = await (
       await paymentModel.aggregate(pipeline).exec()
@@ -89,12 +91,26 @@ router.post('/incomplete', async (req, res) => {
 // approve the current payment
 router.post('/approve', async (req: Request, res: Response) => {
   try {
-    infoLogger.info('inside the approve post method')
+    infoLogger.info('[Router payments/approve]: Inside the approve post method')
+
     const paymentIdCB = req.body.paymentId
     const paymentObj = await platformAPIClient.get<PaymentDTO>(
       `/v2/payments/${paymentIdCB}`
     )
     const { data: currentPayment } = paymentObj
+
+    // Check that user has specified the membership interval
+
+    const regDto: IUser = currentPayment.metadata as IUser
+
+    if (
+      !regDto.membership_Type ||
+      regDto.membership_Type.length === 0 ||
+      !Object.values(MembershipType).includes(regDto.membership_Type)
+    ) {
+      const myError = new CustomError('Invalid Membership Type.', 301)
+      throw myError
+    }
 
     const payment = new paymentModel({
       uid: currentPayment.user_uid,
@@ -105,13 +121,17 @@ router.post('/approve', async (req: Request, res: Response) => {
       cancelled: false,
       created_at: new Date(),
     })
-    infoLogger.info('about to create payment object inside approve post method')
+    infoLogger.info(
+      '[Router payments/approve]: About to create payment object inside approve post method'
+    )
     const paymentObjCreated = await payment.save()
 
     const userId: string = currentPayment.user_uid
     const eventType: string = LogEventType.StreamVaultPaymentApproved
 
-    infoLogger.info('about to log the payment approval')
+    infoLogger.info(
+      '[Router payments/approve]: About to log the payment approval-inside Approve API call back '
+    )
     const url = config.server_url
     const clientIp: string = getClientIp(req)!
     await axios.post(`${url}/v2/log/userAction`, {
@@ -120,7 +140,9 @@ router.post('/approve', async (req: Request, res: Response) => {
       clientIp,
     })
     // let Pi Servers know that you're ready
-    infoLogger.info('About to call the approve api at pi blockchain testnet')
+    infoLogger.info(
+      '[Router payments/approve]: About to call the approve api at pi blockchain testnet'
+    )
 
     await platformAPIClient.post(`/v2/payments/${paymentObjCreated.paymentId}/approve`)
 
@@ -129,25 +151,37 @@ router.post('/approve', async (req: Request, res: Response) => {
       paymentfor: 'membership',
       message: `Approved the payment ${paymentObjCreated.paymentId}`,
     })
-  } catch (err) {
-    errorLogger.error(err)
+  } catch (error: any) {
+    if (error instanceof CustomError && error.number === 301) {
+      errorLogger.error(
+        `[Router payments/approve]: Custom error with number ${error.number}: ${error.message}`
+      )
+    } else {
+      errorLogger.error(`[Router payments/approve]: Error: ${error.message}`)
+    }
   }
 })
 
 router.post('/complete', async (req, res) => {
   const paymentIdCB = req.body.paymentId
   const txidCB = req.body.txid
-  infoLogger.info('Complete API called back')
+  infoLogger.info('[Router: payments/complete] Complete API called back')
 
   try {
     const paymentObj = await platformAPIClient.get<PaymentDTO>(
       `/v2/payments/${paymentIdCB}`
     )
+
     const { data: currentPayment } = paymentObj
 
-    const isMembershipCreatedOrUpdted = await createMembership(currentPayment.metadata)
+    const registeringMember: IUser = currentPayment.metadata as IUser
 
-    if (isMembershipCreatedOrUpdted) {
+    infoLogger.info('[Router: payments/complete]: About to log the payment approval.')
+    const url = config.server_url
+
+    const response = await axios.post(`${url}/v2/user/member`, registeringMember)
+
+    if (response.status === 200) {
       await paymentModel.updateOne(
         { paymentId: paymentIdCB },
         {
@@ -160,7 +194,7 @@ router.post('/complete', async (req, res) => {
       await platformAPIClient.post(`/v2/payments/${paymentIdCB}/complete`, {
         txid: txidCB,
       })
-      infoLogger.info(`Membership for the user  ${currentPayment.user_uid}`)
+
       res.status(200).json({
         status: 200,
         paymentfor: 'membership',
@@ -170,7 +204,7 @@ router.post('/complete', async (req, res) => {
       throw new Error(`Failed to create membership against payment: ${paymentIdCB}`)
     }
   } catch (error) {
-    errorLogger.error(error)
+    errorLogger.error(`[Router: /complete]: error: ${JSON.stringify(error)}`)
     res.status(500).json({
       status: 500,
       paymentfor: 'membership',
@@ -217,75 +251,12 @@ router.post('/cancelled_payment', async (req, res) => {
       message: `Payment has been cancelled: ${paymentIdCB}`,
     })
 
-    infoLogger.info(`Payment for User [ ${userId} ] has been cancelled.`)
+    infoLogger.info(
+      `[Router: payments/cancelled_payment]: Payment for User [ ${userId} ] has been cancelled.`
+    )
   } catch (error) {
     errorLogger.error(error)
   }
 })
-
-async function createMembership(paramRegDTO: any): Promise<boolean> {
-  try {
-    const regDTO: IUser = paramRegDTO as IUser
-    const registeredUser = await userModel.findOne({ userId: regDTO.pichain_uid })
-
-    // Define the subscription interval
-    const subscriptionInterval = 'monthly' // Can be 'monthly', 'quarterly', 'half-yearly', or 'yearly'
-    let renewalDate = moment()
-
-    // Calculate the renewal date based on the subscription interval
-    // Default to one month ahead
-    if (subscriptionInterval === 'monthly') {
-      renewalDate = moment().add(1, 'month')
-    } else if (subscriptionInterval === 'quarterly') {
-      renewalDate = moment().add(3, 'months')
-    } else if (subscriptionInterval === 'half-yearly') {
-      renewalDate = moment().add(6, 'months')
-    } else if (subscriptionInterval === 'yearly') {
-      renewalDate = moment().add(1, 'year')
-    }
-
-    if (registeredUser) {
-      // update membership details to the registered user only
-      await userModel.updateOne(
-        { pichain_uid: regDTO.pichain_uid },
-        {
-          $set: {
-            membership_date: regDTO.membership_date,
-            membership_Type: regDTO.membership_Type,
-            membership_renewal_date: renewalDate,
-            isMembershipExpired: false,
-          },
-        }
-      )
-    } else {
-      //This is completely a new registration with membership
-      const userObj = new userModel({
-        accessCode: regDTO.accessCode,
-        pichain_uid: regDTO.pichain_uid,
-        userId: regDTO.userId,
-        pichain_username: regDTO.pichain_username,
-        streamVault_username: regDTO.pichain_username,
-        email: regDTO.email || '',
-        country: regDTO.country || '',
-        city: regDTO.city || '',
-        role: regDTO.role,
-        registration_date: new Date(),
-        picture: '',
-        isProfileDisabled: regDTO.isProfileDisabled,
-        membership_date: regDTO.membership_date,
-        membership_Type: regDTO.membership_Type,
-        membership_renewal_date: renewalDate,
-        isMembershipExpired: false,
-      })
-
-      await userObj.save()
-    }
-
-    return true
-  } catch (error) {
-    errorLogger.error(error)
-    return false
-  }
-}
 
 export default router

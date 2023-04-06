@@ -1,7 +1,7 @@
 import { Schema, model } from 'mongoose'
 
 import { IChannel } from './channel'
-import { Role } from './enums'
+import { MembershipType, Role } from './enums'
 import { ISetting } from './setting'
 
 export interface IUser {
@@ -17,7 +17,7 @@ export interface IUser {
   role: Role
   registration_date: Date
   membership_date?: Date
-  membership_Type?: string
+  membership_Type?: MembershipType
   membership_renewal_date?: Date
   picture?: string
   isProfileDisabled: boolean
@@ -40,7 +40,7 @@ const userSchema = new Schema<IUser>({
   role: { type: String, required: true },
   registration_date: { type: Date, required: true },
   membership_date: { type: Date, required: false },
-  membership_Type: { type: String, required: false },
+  membership_Type: { type: String, enum: Object.values(MembershipType), required: false },
   membership_renewal_date: { type: Date, required: false },
   picture: { type: String, required: false },
   isProfileDisabled: { type: Boolean, required: true },

@@ -56,9 +56,9 @@ export const signin = async (req: Request, res: Response) => {
       appAccessToken: appToken,
       message: 'User signed in',
     })
-  } catch (err) {
-    errorLogger.error(err)
-    return res.status(401).json({ error: 'Invalid access token' })
+  } catch (err: any) {
+    errorLogger.error(`[Controller: Signin]: ${err.message}`)
+    return res.status(400).json({ error: err.message })
   }
 }
 

@@ -2,6 +2,8 @@ import { Request, Response, Router } from 'express'
 import * as moment from 'moment'
 import { ObjectId } from 'mongodb'
 
+import { errorLogger, infoLogger } from '../../loggers'
+import { MembershipType } from '../../models/enums'
 import { IUser, userModel } from '../../models/user'
 
 const router = Router()
@@ -100,11 +102,11 @@ router.post('/register', async (req: Request, res: Response) => {
 
   userObj.save((err, userObjCreated) => {
     if (err) {
-      res.send({ status: 500, Message: 'User registration failed!' })
+      res.send({ status: 500, message: 'User registration failed!' })
     } else {
       res.send({
         status: 200,
-        Message: `User [${userObj.pichain_username}] has been registered.`,
+        message: `User [${userObj.pichain_username}] has been registered.`,
         userDetails: userObjCreated,
       })
     }
@@ -112,33 +114,37 @@ router.post('/register', async (req: Request, res: Response) => {
 })
 
 router.post('/member', async (req: Request, res: Response) => {
-  let regDto = req.body
-  //const session = req.headers.session // We have to utilize the db session here later
-
-  //Check if the new member is already a registered user
-  const registeredUser = await userModel.findById(regDto.userId)
-
-  // Define the subscription interval
-  const subscriptionInterval = 'monthly' // Can be 'monthly', 'quarterly', 'half-yearly', or 'yearly'
-  let renewalDate = moment()
-
-  // Calculate the renewal date based on the subscription interval
-  // Default to one month ahead
-  if (subscriptionInterval === 'monthly') {
-    renewalDate = moment().add(1, 'month')
-  } else if (subscriptionInterval === 'quarterly') {
-    renewalDate = moment().add(3, 'months')
-  } else if (subscriptionInterval === 'half-yearly') {
-    renewalDate = moment().add(6, 'months')
-  } else if (subscriptionInterval === 'yearly') {
-    renewalDate = moment().add(1, 'year')
-  }
-
   try {
+    let updatedOrNewMember: any
+    const regDto: IUser = req.body as IUser
+    const registeredUser = await userModel.findOne({ userId: regDto.pichain_uid })
+
+    // Define the subscription interval
+    let subscriptionInterval: MembershipType = regDto.membership_Type! // Can be 'monthly', 'quarterly', 'half-yearly', or 'yearly'
+    let renewalDate = moment()
+
+    switch (subscriptionInterval) {
+      case MembershipType.Monthly:
+        renewalDate = moment().add(1, 'month')
+        break
+      case MembershipType.Quarterly:
+        renewalDate = moment().add(3, 'months')
+        break
+      case MembershipType.SemiAnnually:
+        renewalDate = moment().add(6, 'months')
+        break
+      case MembershipType.Annually:
+        renewalDate = moment().add(1, 'year')
+        break
+
+      default:
+        break
+    }
+
     if (registeredUser) {
       // update membership details to the registered user only
-      await userModel.updateOne(
-        { _id: new ObjectId(regDto.userId) },
+      updatedOrNewMember = await userModel.updateOne(
+        { pichain_uid: regDto.pichain_uid },
         {
           $set: {
             membership_date: regDto.membership_date,
@@ -148,17 +154,20 @@ router.post('/member', async (req: Request, res: Response) => {
           },
         }
       )
+      infoLogger.info(
+        `[Router: users/member]: Membership updated for the user  ${regDto.userId}`
+      )
     } else {
       //This is completely a new registration with membership
-
-      let userObj = new userModel({
+      const userObj = new userModel({
         accessCode: regDto.accessCode,
         pichain_uid: regDto.pichain_uid,
+        userId: regDto.userId,
         pichain_username: regDto.pichain_username,
-        videovault_username: regDto.videovault_username,
-        email: regDto.email,
-        country: regDto.country,
-        city: regDto.city,
+        streamVault_username: regDto.pichain_username,
+        email: regDto.email || '',
+        country: regDto.country || '',
+        city: regDto.city || '',
         role: regDto.role,
         registration_date: new Date(),
         picture: '',
@@ -169,30 +178,30 @@ router.post('/member', async (req: Request, res: Response) => {
         isMembershipExpired: false,
       })
 
-      userObj.save((err, userObjCreated) => {
-        if (err) {
-          res.send({ status: 500, Message: 'User registration failed!' })
-        } else {
-          res.send({
-            status: 200,
-            Message: `User [${userObj.pichain_username}] has been registered.`,
-            userDetails: userObjCreated,
-          })
-        }
+      updatedOrNewMember = await userObj.save()
+      infoLogger.info(
+        `[Router: users/member]: Membership created for the user  ${regDto.userId}`
+      )
+    }
+    console.log(updatedOrNewMember)
+
+    if (updatedOrNewMember) {
+      res.send({
+        status: 200,
+        message: `User [${regDto.pichain_username}] has been registered as a subscribed member.`,
+        userDetails: regDto,
+      })
+    } else {
+      res.send({
+        status: 400,
+        message: 'Member subscription failed!',
+        userDetails: regDto,
       })
     }
-    res.send({
-      status: 200,
-      Message: `Membership created for user: ${regDto.pichain_uid} `,
-    })
   } catch (error) {
-    console.log('---------------------------------------------------------------')
-
-    console.log(error)
-    // res.send({
-    //   status: 500,
-    //   Message: `Failed to create user's membership for user: ${regDto.pichain_uid} `,
-    // })
+    console.log('error in user/member api')
+    errorLogger.error(`[Router: users/member]: ${error}`)
+    res.send({ status: 500, message: 'Member subscription failed!' })
   }
 })
 
@@ -224,7 +233,7 @@ router.delete('/deleteUser', async (req: Request, res: Response) => {
     } else {
       res
         .status(200)
-        .send({ Message: `User with Id: [${req.query.userId}] deleted successfully.` })
+        .send({ message: `User with Id: [${req.query.userId}] deleted successfully.` })
     }
   })
 })

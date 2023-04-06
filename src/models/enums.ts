@@ -52,3 +52,10 @@ export enum LogEventType {
   CancelPayment = 'cancel_payment',
   StreamVaultPaymentApproved = 'dev_payment_approved',
 }
+
+export enum MembershipType {
+  Monthly = 'monthly',
+  Quarterly = 'quarterly',
+  SemiAnnually = 'half-yearly',
+  Annually = 'yearly',
+}
