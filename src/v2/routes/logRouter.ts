@@ -1,21 +1,31 @@
+import axios from 'axios'
 import { Request, Response, Router } from 'express'
 
+import { errorLogger } from '../../loggers'
 import { logUserModel, logVideoModel } from '../../models/log'
 
 const router = Router()
 
-// function extractTheIP(req: Request): string {
-//   const ip = req.clientIp!
-//   return ip
-// }
-
 router.post('/userAction', async (req: Request, res: Response) => {
   const { userId, eventType, clientIp } = req.body
 
-  const country: string = 'aus'
-  const city: string = 'melb'
+  let country: string = 'NA'
+  let city: string = 'NA'
   const timestamp = new Date().toISOString()
   const ip: string = clientIp
+
+  try {
+    const url = `https://get.geojs.io/v1/ip/geo/${ip}.json`
+    const response = await axios.get(url)
+    const geoData = response.data
+
+    if (geoData) {
+      country = geoData.country_code || 'NA'
+      city = geoData.city || 'NA'
+    }
+  } catch (error) {
+    errorLogger.error('[Log User]: Failed to capture details for the IP')
+  }
 
   // Create a new log user object with the data from the request body
   const newLogUser = new logUserModel({
@@ -41,10 +51,23 @@ router.post('/userAction', async (req: Request, res: Response) => {
 router.post('/videoAction', async (req: Request, res: Response) => {
   const { userId, eventType, videoId, clientIp } = req.body
 
-  const country: string = 'aus'
-  const city: string = 'melb'
+  let country: string = 'NA'
+  let city: string = 'NA'
   const timestamp = new Date().toISOString()
   const ip: string = clientIp
+
+  try {
+    const url = `https://get.geojs.io/v1/ip/geo/${ip}.json`
+    const response = await axios.get(url)
+    const geoData = response.data
+
+    if (geoData) {
+      country = geoData.country_code || 'NA'
+      city = geoData.city || 'NA'
+    }
+  } catch (error) {
+    errorLogger.error('[Log Video]: Failed to capture details for the IP')
+  }
 
   // Create a new log user object with the data from the request body
   const newLogVideo = new logVideoModel({
