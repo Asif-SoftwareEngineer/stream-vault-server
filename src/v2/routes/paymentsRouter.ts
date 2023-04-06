@@ -42,8 +42,6 @@ router.post('/incomplete', async (req, res) => {
       },
     ]
 
-    await platformAPIClient.post(`/v2/payments/${paymentIdCB}/complete`, { txid: txidCB })
-
     const filteredPayment = await (
       await paymentModel.aggregate(pipeline).exec()
     ).find((payment) => payment.paymentId === paymentIdCB)
