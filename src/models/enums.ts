@@ -45,6 +45,7 @@ export enum Gender {
 }
 
 export enum LogEventType {
+  AppLanded = 'app_landed',
   StreamInit = 'video_start',
   StreamDuation = 'view_duration',
   ReAuthenticate = 're_authenticate',
