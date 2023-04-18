@@ -20,7 +20,7 @@ export interface ILogUser {
   city: string
   eventType: LogEventType
   timestamp: string
-  details: string
+  details?: string
 }
 
 const logVideoSchema = new Schema<ILogVideo>({

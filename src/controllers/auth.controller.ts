@@ -31,7 +31,7 @@ export const signin = async (req: Request, res: Response) => {
         clientIp,
       })
 
-      infoLogger.info(`User [ ${me.uid} ] re-authenticated.`)
+      infoLogger.info(`[Controller: Signin]: User [ ${me.uid} ] re-authenticated.`)
     }
 
     await piUserModel.findOneAndUpdate(

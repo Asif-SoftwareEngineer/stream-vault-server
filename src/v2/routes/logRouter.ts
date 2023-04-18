@@ -3,18 +3,20 @@ import { Request, Response, Router } from 'express'
 
 import { errorLogger, infoLogger } from '../../loggers'
 import { LogEventType } from '../../models/enums'
-import { logUserModel, logVideoModel } from '../../models/log'
+import { ILogUser, logUserModel, logVideoModel } from '../../models/log'
 
 const router = Router()
 
 router.post('/userAction', async (req: Request, res: Response) => {
-  const { userId, eventType, clientIp, details } = req.body
+  const { userId, eventType, clientIp, logDetails } = req.body
+
+  const strUserId = userId.toString()
 
   let country: string = 'NA'
   let city: string = 'NA'
   const timestamp = new Date().toISOString()
   const ip: string = clientIp
-  const logDetails: string = details || ''
+  let details: string = logDetails ? logDetails.toString() : ''
 
   try {
     const url = `https://get.geojs.io/v1/ip/geo/${ip}.json`
@@ -33,7 +35,7 @@ router.post('/userAction', async (req: Request, res: Response) => {
 
   if (eventType === LogEventType.AppLanded) {
     try {
-      const existingLoggedUser = await findUserLog(userId, eventType)
+      const existingLoggedUser = await findUserLog(userId, eventType, new Date())
 
       if (existingLoggedUser) {
         infoLogger.info(`[Log User]: Already logged [ ${userId} ] user found.`)
@@ -44,7 +46,50 @@ router.post('/userAction', async (req: Request, res: Response) => {
     }
   }
 
-  // Create a new log user object with the data from the request body
+  if (eventType === LogEventType.ReAuthenticate && !strUserId.startsWith('AppVisitor')) {
+    try {
+      const existingLoggedUser = await findUserLog(userId, eventType)
+
+      if (existingLoggedUser) {
+        let totalReAuthAttempts: number
+        totalReAuthAttempts = Number(existingLoggedUser.details || 0)
+
+        // increment the re authentication by 1
+        totalReAuthAttempts += 1
+        details = totalReAuthAttempts.toString()
+
+        const logUserUpdated = await logUserModel.findOneAndUpdate(
+          {
+            eventType: eventType,
+            userId: strUserId,
+          },
+          {
+            $set: {
+              ip: ip,
+              timestamp: timestamp,
+              city: city,
+              country: country,
+              details: details,
+            },
+          },
+          { upsert: true, new: true }
+        )
+
+        if (logUserUpdated) {
+          infoLogger.info(
+            `[Log User]: User [ ${userId} ] Log updated with re-authenticating details.`
+          )
+          return res
+            .status(200)
+            .send(`User [ ${userId} ] Log updated with re-authenticating details.`)
+        }
+      }
+    } catch (err) {
+      return res.status(500).send('Error happened while finding the existing logged user')
+    }
+  }
+
+  //In all other cases, Create a new log user object with the data from the request body
   const newLogUser = new logUserModel({
     userId,
     ip,
@@ -52,7 +97,7 @@ router.post('/userAction', async (req: Request, res: Response) => {
     city,
     eventType,
     timestamp,
-    logDetails,
+    details,
   })
 
   try {
@@ -109,17 +154,32 @@ router.post('/videoAction', async (req: Request, res: Response) => {
   }
 })
 
-async function findUserLog(userId: string, eventType: LogEventType) {
-  const today = new Date().toISOString().substring(0, 10)
-  const logUser = await logUserModel
-    .findOne({
-      $and: [
-        { userId: { $eq: userId } },
-        { eventType: { $eq: eventType.toString() } },
-        { timestamp: { $regex: `^${today}` } },
-      ],
-    })
-    .exec()
+async function findUserLog(
+  userId: string,
+  eventType: LogEventType,
+  date?: Date
+): Promise<ILogUser | null> {
+  let logUser
+
+  if (!date) {
+    logUser = await logUserModel
+      .findOne({
+        $and: [{ userId: { $eq: userId } }, { eventType: { $eq: eventType.toString() } }],
+      })
+      .exec()
+  } else {
+    const today = date.toISOString().substring(0, 10)
+    logUser = await logUserModel
+      .findOne({
+        $and: [
+          { userId: { $eq: userId } },
+          { eventType: { $eq: eventType.toString() } },
+          { timestamp: { $regex: `^${today}` } },
+        ],
+      })
+      .exec()
+  }
+
   return logUser
 }
 
