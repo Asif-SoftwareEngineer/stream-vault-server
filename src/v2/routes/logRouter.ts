@@ -1,7 +1,8 @@
 import axios from 'axios'
 import { Request, Response, Router } from 'express'
 
-import { errorLogger } from '../../loggers'
+import { errorLogger, infoLogger } from '../../loggers'
+import { LogEventType } from '../../models/enums'
 import { logUserModel, logVideoModel } from '../../models/log'
 
 const router = Router()
@@ -28,6 +29,21 @@ router.post('/userAction', async (req: Request, res: Response) => {
     errorLogger.error('[Log User]: Failed to capture details for the IP')
   }
 
+  //if appLanded logs exists for a visior in today's date, then ignore logging new entry
+
+  if (eventType === LogEventType.AppLanded) {
+    try {
+      const existingLoggedUser = await findUserLog(userId, eventType)
+
+      if (existingLoggedUser) {
+        infoLogger.info('[Log User]: Already logged user found.')
+        res.status(200).send('Already logged user found.')
+      }
+    } catch (err) {
+      res.status(500).send('Error happened while finding the existing logged user')
+    }
+  }
+
   // Create a new log user object with the data from the request body
   const newLogUser = new logUserModel({
     userId,
@@ -36,7 +52,7 @@ router.post('/userAction', async (req: Request, res: Response) => {
     city,
     eventType,
     timestamp,
-    logDetails
+    logDetails,
   })
 
   try {
@@ -44,7 +60,7 @@ router.post('/userAction', async (req: Request, res: Response) => {
 
     res.status(200).send('Log user added successfully')
   } catch (error) {
-    console.error(error)
+    errorLogger.error('[Log User]: Failed to insert log user')
     res.status(500).send('Failed to insert log user')
   } finally {
   }
@@ -92,5 +108,19 @@ router.post('/videoAction', async (req: Request, res: Response) => {
   } finally {
   }
 })
+
+async function findUserLog(userId: string, eventType: LogEventType) {
+  const today = new Date().toISOString().substring(0, 10)
+  const logUser = await logUserModel
+    .findOne({
+      $and: [
+        { userId: { $eq: userId } },
+        { eventType: { $eq: eventType.toString() } },
+        { timestamp: { $regex: `^${today}` } },
+      ],
+    })
+    .exec()
+  return logUser
+}
 
 export default router
