@@ -56,9 +56,9 @@ export const signin = async (req: Request, res: Response) => {
       appAccessToken: appToken,
       message: 'User signed in',
     })
-  } catch (err: any) {
-    errorLogger.error(`[Controller: Signin]: ${err.message}`)
-    return res.status(400).json({ error: err.message })
+  } catch (error: any) {
+    errorLogger.error(`[Controller: Signin]: ${JSON.stringify(error)}`)
+    return res.status(400).json({ error: error.message })
   }
 }
 
@@ -80,10 +80,10 @@ export const signout = async (req: Request, res: Response) => {
         clientIp,
       })
 
-      infoLogger.info(`User [ ${userId} ] signed out.`)
+      infoLogger.info(`[User Signout] [ ${userId} ] signed out.`)
     }
   } catch (error) {
-    errorLogger.error(error)
+    errorLogger.error(`[Controller Signout]-  ${JSON.stringify(error)}`)
   }
 
   return res.status(200).json({ message: 'User signed out' })

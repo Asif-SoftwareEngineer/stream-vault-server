@@ -36,11 +36,11 @@ router.post('/userAction', async (req: Request, res: Response) => {
       const existingLoggedUser = await findUserLog(userId, eventType)
 
       if (existingLoggedUser) {
-        infoLogger.info('[Log User]: Already logged user found.')
-        res.status(200).send('Already logged user found.')
+        infoLogger.info(`[Log User]: Already logged [ ${userId} ] user found.`)
+        return res.status(200).send(`Already logged [ ${userId} ] user found.`)
       }
     } catch (err) {
-      res.status(500).send('Error happened while finding the existing logged user')
+      return res.status(500).send('Error happened while finding the existing logged user')
     }
   }
 
@@ -57,11 +57,11 @@ router.post('/userAction', async (req: Request, res: Response) => {
 
   try {
     await newLogUser.save()
-
-    res.status(200).send('Log user added successfully')
+    infoLogger.info(`[Log User]:  User [ ${userId} ] added to log successfully`)
+    return res.status(200).send(`User [ ${userId} ] added to log successfully`)
   } catch (error) {
     errorLogger.error('[Log User]: Failed to insert log user')
-    res.status(500).send('Failed to insert log user')
+    return res.status(500).send('Failed to insert log user')
   } finally {
   }
 })
