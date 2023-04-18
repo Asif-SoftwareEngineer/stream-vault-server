@@ -262,8 +262,8 @@ router.post('/handle_error', async (req, res) => {
   try {
     const paymentIdCB = req.body.payment.identifier
     const error = req.body.error ?? ''
-    let logDetails: string
-    let errorMessage: string
+    let logDetails: string = ''
+    let errorMessage: string = ''
     const paymentObj = await platformAPIClient.get<PaymentDTO>(
       `/v2/payments/${paymentIdCB}`
     )
