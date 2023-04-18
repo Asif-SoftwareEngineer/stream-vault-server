@@ -52,6 +52,7 @@ export enum LogEventType {
   SignOut = 'sign_out',
   CancelPayment = 'cancel_payment',
   StreamVaultPaymentApproved = 'dev_payment_approved',
+  ErrorRaised = 'error_raised',
 }
 
 export enum MembershipType {

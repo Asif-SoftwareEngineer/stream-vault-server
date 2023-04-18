@@ -1,6 +1,6 @@
 import { Schema, model } from 'mongoose'
 
-import {LogEventType} from './enums'
+import { LogEventType } from './enums'
 
 export interface ILogVideo {
   userId: string
@@ -20,6 +20,7 @@ export interface ILogUser {
   city: string
   eventType: LogEventType
   timestamp: string
+  details: string
 }
 
 const logVideoSchema = new Schema<ILogVideo>({
@@ -40,6 +41,7 @@ const logUserSchema = new Schema<ILogUser>({
   city: { type: String, required: false },
   eventType: { type: String, enum: Object.values(LogEventType), required: true },
   timestamp: { type: String, required: true },
+  details: { type: String, required: false },
 })
 
 export const logVideoModel = model<ILogVideo>('LogVideo', logVideoSchema)

@@ -7,12 +7,13 @@ import { logUserModel, logVideoModel } from '../../models/log'
 const router = Router()
 
 router.post('/userAction', async (req: Request, res: Response) => {
-  const { userId, eventType, clientIp } = req.body
+  const { userId, eventType, clientIp, details } = req.body
 
   let country: string = 'NA'
   let city: string = 'NA'
   const timestamp = new Date().toISOString()
   const ip: string = clientIp
+  const logDetails: string = details || ''
 
   try {
     const url = `https://get.geojs.io/v1/ip/geo/${ip}.json`
@@ -35,6 +36,7 @@ router.post('/userAction', async (req: Request, res: Response) => {
     city,
     eventType,
     timestamp,
+    logDetails
   })
 
   try {

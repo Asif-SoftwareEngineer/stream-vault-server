@@ -257,4 +257,49 @@ router.post('/cancelled_payment', async (req, res) => {
   }
 })
 
+//handle the error happened within payment
+router.post('/handle_error', async (req, res) => {
+  try {
+    const paymentIdCB = req.body.payment.identifier
+    const error = req.body.error ?? ''
+    let logDetails: string
+    let errorMessage: string
+    const paymentObj = await platformAPIClient.get<PaymentDTO>(
+      `/v2/payments/${paymentIdCB}`
+    )
+    const { data: currentPayment } = paymentObj
+
+    if (typeof error === 'object') {
+      errorMessage = error?.message
+      logDetails = JSON.stringify(error)
+    }
+
+    // Make a POST request to the /userAction endpoint with the data from the request body
+
+    const userId: string = currentPayment.user_uid
+    const eventType: string = LogEventType.ErrorRaised
+
+    const url = config.server_url
+    const clientIp: string = getClientIp(req)!
+    await axios.post(`${url}/v2/log/userAction`, {
+      userId,
+      eventType,
+      clientIp,
+      logDetails,
+    })
+
+    res.status(200).json({
+      status: 200,
+      paymentfor: 'membership',
+      message: `Error [ ${errorMessage} ] related to Payment [ ${paymentIdCB} ] has been logged.`,
+    })
+
+    infoLogger.info(
+      `[Router: payments/handle_error]: Payment for User [ ${userId} ] has been logged with its raised error.`
+    )
+  } catch (error) {
+    errorLogger.error(error)
+  }
+})
+
 export default router
