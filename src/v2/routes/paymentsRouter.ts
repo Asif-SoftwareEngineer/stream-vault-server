@@ -282,6 +282,7 @@ router.post('/handle_error', async (req, res) => {
 
     // if (typeof error === 'object') {
     //   errorMessage = error?.message
+    console.log(txidCB + txURL)
     logDetails = JSON.stringify(error)
     // }
 
