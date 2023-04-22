@@ -265,7 +265,7 @@ router.post('/handle_error', async (req, res) => {
       identifier: paymentIdCB = '', // get the value of identifier from payment object
       transaction: { txid: txidCB = '', _link: txURL = '' } = {}, // get the value of txid and _link from transaction object if it exists
     } = {},
-    user_uid,
+    userId,
   } = req.body.payment
 
   const error = req.body.error
@@ -294,7 +294,7 @@ router.post('/handle_error', async (req, res) => {
     const url = config.server_url
     const clientIp: string = getClientIp(req)!
     await axios.post(`${url}/v2/log/userAction`, {
-      user_uid,
+      userId,
       eventType,
       clientIp,
       logDetails,
@@ -307,10 +307,21 @@ router.post('/handle_error', async (req, res) => {
     })
 
     infoLogger.info(
-      `[Router: payments/handle_error]: Payment for User [ ${user_uid} ] has been logged with its raised error.`
+      `[Router: payments/handle_error]: Payment for User [ ${userId} ] has been logged with its raised error.`
     )
   } catch (error) {
+    let userId = 'unknown user'
+    const logDetails = 'error happened during payment processing'
     errorLogger.error(error)
+    const eventType: string = LogEventType.ErrorRaised
+    const url = config.server_url
+    const clientIp: string = getClientIp(req)!
+    await axios.post(`${url}/v2/log/userAction`, {
+      userId,
+      eventType,
+      clientIp,
+      logDetails,
+    })
   }
 })
 
