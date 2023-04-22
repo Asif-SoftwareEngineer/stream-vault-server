@@ -259,30 +259,41 @@ router.post('/cancelled_payment', async (req, res) => {
 
 //handle the error happened within payment
 router.post('/handle_error', async (req, res) => {
-  try {
-    const paymentIdCB = req.body.payment.identifier
-    const error = req.body.error ?? ''
-    let logDetails: string = ''
-    let errorMessage: string = ''
-    const paymentObj = await platformAPIClient.get<PaymentDTO>(
-      `/v2/payments/${paymentIdCB}`
-    )
-    const { data: currentPayment } = paymentObj
+  // Destructure the necessary values from req.body using object destructuring
+  const {
+    payment: {
+      identifier: paymentIdCB = '', // get the value of identifier from payment object
+      transaction: { txid: txidCB = '', _link: txURL = '' } = {}, // get the value of txid and _link from transaction object if it exists
+    } = {},
+    user_uid,
+  } = req.body.payment
 
-    if (typeof error === 'object') {
-      errorMessage = error?.message
-      logDetails = JSON.stringify(error)
-    }
+  const error = req.body.error
+
+  try {
+    // const paymentIdCB = req.body.payment.identifier
+    // const error = req.body.error ?? ''
+    let logDetails: string = ''
+    // let errorMessage: string = ''
+    // const paymentObj = await platformAPIClient.get<PaymentDTO>(
+    //   `/v2/payments/${paymentIdCB}`
+    // )
+    // const { data: currentPayment } = paymentObj
+
+    // if (typeof error === 'object') {
+    //   errorMessage = error?.message
+    logDetails = JSON.stringify(error)
+    // }
 
     // Make a POST request to the /userAction endpoint with the data from the request body
 
-    const userId: string = currentPayment.user_uid
+    //const userId: string = currentPayment.user_uid
     const eventType: string = LogEventType.ErrorRaised
 
     const url = config.server_url
     const clientIp: string = getClientIp(req)!
     await axios.post(`${url}/v2/log/userAction`, {
-      userId,
+      user_uid,
       eventType,
       clientIp,
       logDetails,
@@ -291,11 +302,11 @@ router.post('/handle_error', async (req, res) => {
     res.status(200).json({
       status: 200,
       paymentfor: 'membership',
-      message: `Error [ ${errorMessage} ] related to Payment [ ${paymentIdCB} ] has been logged.`,
+      message: `Error [ ${logDetails} ] related to Payment [ ${paymentIdCB} ] has been logged.`,
     })
 
     infoLogger.info(
-      `[Router: payments/handle_error]: Payment for User [ ${userId} ] has been logged with its raised error.`
+      `[Router: payments/handle_error]: Payment for User [ ${user_uid} ] has been logged with its raised error.`
     )
   } catch (error) {
     errorLogger.error(error)
