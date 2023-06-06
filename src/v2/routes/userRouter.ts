@@ -3,8 +3,12 @@ import * as moment from 'moment'
 import { ObjectId } from 'mongodb'
 
 import { errorLogger, infoLogger } from '../../loggers'
+import { accountVerificationModel } from '../../models/account-verification'
+import { CustomError } from '../../models/customErrorClass'
 import { MembershipType } from '../../models/enums'
 import { IUser, userModel } from '../../models/user'
+
+const Joi = require('joi')
 
 const router = Router()
 
@@ -237,5 +241,126 @@ router.delete('/deleteUser', async (req: Request, res: Response) => {
     }
   })
 })
+
+router.post('/verifyEmail', async (req: Request, res: Response) => {
+  const verificationSchema = Joi.object({
+    firstName: Joi.string().required(),
+    lastName: Joi.string().required(),
+    email: Joi.string().email().required(),
+  })
+
+  const { error, value } = verificationSchema.validate(req.body)
+
+  if (error) {
+    // Invalid request body, return an error response
+    res.status(400).json({ error: error.details[0].message })
+    return
+  }
+
+  try {
+    // Valid request body, proceed with saving
+    const verifyingUserObj = new accountVerificationModel({
+      firstName: value.firstName,
+      lastName: value.lastName,
+      email: value.email,
+      isVerified: false,
+      code: generateSixDigitCode(),
+      createdAt: new Date(),
+    })
+
+    await verifyingUserObj.save()
+
+    try {
+      const email = verifyingUserObj.email
+      const verificationCode = verifyingUserObj.code
+      await sendVerificationEmail(email, verificationCode)
+      console.log('Email sent successfully.')
+
+      res.status(200).json({
+        status: 200,
+        message: 'Six digit verification code sent!',
+        verifyingUser: verifyingUserObj,
+      })
+    } catch {
+      const internalError = new CustomError('Failed to send email', 101)
+      throw internalError
+    }
+  } catch (error: any) {
+    console.error(`[Router: /verifyEmail]: error: ${JSON.stringify(error)}`)
+    if (error instanceof CustomError) {
+      // Handle the custom error based on its number property
+      if (error.number === 101) {
+        res.status(500).json({
+          status: 500,
+          message: 'Failed to send verification email!',
+        })
+      } else {
+        // Handle other custom errors if needed
+      }
+    } else {
+      // Handle other non-custom errors
+      res.status(500).json({
+        status: 500,
+        message: 'System failed to dispatch a verification email!',
+      })
+    }
+  }
+})
+
+router.get('/verifyCode', async (req, res) => {
+  const { email, code } = req.query
+
+  try {
+    const verification = await accountVerificationModel.findOne({ email, code })
+
+    if (verification) {
+      // Code is valid for the given email
+      // Update the isVerified field to true
+      verification.isVerified = true
+      await verification.save()
+
+      return res.status(200).json({ message: 'Code verified successfully' })
+    } else {
+      // Code is invalid or doesn't match any records
+      return res.status(400).json({ message: 'Invalid code' })
+    }
+  } catch (error) {
+    // Handle any errors that occur during the process
+    return res.status(500).json({ message: 'Internal server error' })
+  }
+})
+
+function generateSixDigitCode() {
+  const codeLength = 6
+  const min = Math.pow(10, codeLength - 1)
+  const max = Math.pow(10, codeLength) - 1
+  const code = Math.floor(Math.random() * (max - min + 1)) + min
+  return code.toString()
+}
+
+function sendVerificationEmail(email: string, code: string) {
+  return new Promise<void>((resolve, reject) => {
+    const sgMail = require('@sendgrid/mail')
+    sgMail.setApiKey('YOUR_SENDGRID_API_KEY')
+
+    const msg = {
+      to: email,
+      from: 'streamvault.pi@gmail.com',
+      subject: 'Email verification code',
+      text: `Your verification code is: ${code}`,
+    }
+
+    sgMail
+      .send(msg)
+      .then(() => {
+        console.log('Verification email sent successfully.')
+        resolve() // Resolve the promise
+      })
+      .catch((error: any) => {
+        console.error('Error sending verification email:', error)
+        reject(error) // Reject the promise with the error
+      })
+  })
+}
 
 export default router
