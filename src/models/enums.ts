@@ -56,8 +56,7 @@ export enum LogEventType {
 }
 
 export enum MembershipType {
+  Free = 'free',
   Monthly = 'monthly',
-  Quarterly = 'quarterly',
-  SemiAnnually = 'half-yearly',
   Annually = 'yearly',
 }

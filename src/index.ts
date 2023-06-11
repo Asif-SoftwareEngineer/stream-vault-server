@@ -34,7 +34,6 @@ async function start() {
   Instance.listen(config.Port, async () => {
     infoLogger.info(`Server listening on port ${config.Port}...`)
 
-
     infoLogger.info('Server Start: Done.')
   })
 }

@@ -5,7 +5,7 @@ import { getClientIp } from 'request-ip'
 import * as config from '../../config'
 import { errorLogger, infoLogger } from '../../loggers'
 import { CustomError } from '../../models/customErrorClass'
-import { LogEventType, MembershipType } from '../../models/enums'
+import { LogEventType } from '../../models/enums'
 import { PaymentDTO, paymentModel } from '../../models/payment'
 import { IUser } from '../../models/user'
 import platformAPIClient from '../../platformApiClient'
@@ -102,9 +102,7 @@ router.post('/approve', async (req: Request, res: Response) => {
     const regDto: IUser = currentPayment.metadata as IUser
 
     if (
-      !regDto.membership_Type ||
-      regDto.membership_Type.length === 0 ||
-      !Object.values(MembershipType).includes(regDto.membership_Type)
+      !regDto.membershipPlan.planType
     ) {
       const myError = new CustomError('Invalid Membership Type.', 301)
       throw myError
