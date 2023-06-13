@@ -4,7 +4,7 @@ import { NextFunction, Request, Response } from 'express'
 import * as config from './../config'
 import { accountVerificationModel } from '../models/account-verification'
 import { MembershipType } from '../models/enums'
-import { IUser, userModel } from '../models/user'
+import { userModel } from '../models/user'
 
 import dayjs = require('dayjs')
 
@@ -13,18 +13,19 @@ export const verifyUser = async (req: Request, res: Response, next: NextFunction
     const verifyingMember = await accountVerificationModel.findOne({
       email: req.body.email,
       code: req.body.code,
-      isVerified: false,
     })
 
     if (verifyingMember) {
       verifyingMember.isVerified = true
       await verifyingMember.save()
 
-      return res
-        .status(200)
-        .json({ verifiedMember: verifyingMember, message: 'Code verified successfully.' })
+      return res.status(200).json({
+        status: 200,
+        verifiedMember: verifyingMember,
+        message: 'Code verified successfully.',
+      })
     } else {
-      return res.status(400).json({ message: 'Invalid code provided.' })
+      return res.status(400).json({ status: 400, errorMessage: 'Invalid code provided.' })
     }
   } catch (error) {
     // Handle any errors that occur during the process
@@ -36,11 +37,7 @@ export const verifyUser = async (req: Request, res: Response, next: NextFunction
   }
 }
 
-export const checkRegisteringUser = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const getUserRegistrationStatus = async (req: Request, res: Response) => {
   try {
     const { email, mobile } = req.body
 
@@ -61,56 +58,12 @@ export const checkRegisteringUser = async (
           message: 'The user has already been registered. And Membership is active.',
         })
       }
+    } else {
+      res.status(200).json({
+        RegStatus: 'unRegistered',
+        message: 'The user has not been registered before.',
+      })
     }
-    next()
-  } catch (error) {
-    console.error('Error during user registration:', error)
-    res.status(500).json({
-      message: 'An error occurred during user registration.',
-    })
-  }
-}
-
-export const registerUser = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    let planType: string = req.body.membershipPlan.planType // Can be 'free', 'monthly' or 'yearly'
-    let regDate: Dayjs = dayjs().startOf('day')
-    let renewalDate: Dayjs = dayjs().startOf('day')
-
-    switch (planType) {
-      case MembershipType.Free:
-        renewalDate = regDate.add(100, 'year')
-        break
-      case MembershipType.Monthly:
-        renewalDate = regDate.add(1, 'month')
-        break
-      case MembershipType.Annually:
-        renewalDate = regDate.add(1, 'year')
-        break
-      default:
-        break
-    }
-
-    // User not registered before, create a new user
-    const newUser: IUser = {
-      userName: req.body.userName,
-      email: req.body.email,
-      mobile: req.body.mobile,
-      membershipPlan: req.body.membershipPlan,
-      role: req.body.role,
-      isProfileDisabled: false,
-      isMembershipExpired: false,
-      membershipRenewalDate: renewalDate,
-      registrationDate: regDate,
-    }
-
-    // Insert the new user into the collection
-    await userModel.updateOne(newUser)
-
-    res.status(200).json({
-      RegStatus: 'Registered',
-      message: 'User registered successfully.',
-    })
   } catch (error) {
     console.error('Error during user registration:', error)
     res.status(500).json({
@@ -124,13 +77,15 @@ export const generateSixDigitCode = async (
   res: Response,
   next: NextFunction
 ) => {
+  const reqPayLoad = req.body
+
   const codeLength = 6
   const min = Math.pow(10, codeLength - 1)
   const max = Math.pow(10, codeLength) - 1
   const code = Math.floor(Math.random() * (max - min + 1)) + min
 
   const updatedRequestBody = {
-    ...req.body,
+    ...reqPayLoad,
     code: code.toString(),
   }
 
@@ -155,7 +110,6 @@ export const sendSmsForVerification = async (mobile: string, code: string) => {
     sgMail
       .send(msg)
       .then(() => {
-        console.log('Verification email sent successfully.')
         resolve() // Resolve the promise
       })
       .catch((error: any) => {
@@ -163,4 +117,99 @@ export const sendSmsForVerification = async (mobile: string, code: string) => {
         reject(error) // Reject the promise with the error
       })
   })
+}
+
+export const registerUser = async (req: Request, res: Response) => {
+  try {
+    const reqPayLoad = req.body
+
+    let planType: string = reqPayLoad.membership.planType // Can be 'free', 'monthly' or 'yearly'
+
+    let regDate: Dayjs = dayjs().startOf('day')
+    let renewalDate: Dayjs = dayjs().startOf('day')
+
+    switch (planType) {
+      case MembershipType.Free:
+        renewalDate = regDate.add(100, 'year')
+        break
+      case MembershipType.Monthly:
+        renewalDate = regDate.add(1, 'month')
+        break
+      case MembershipType.Annually:
+        renewalDate = regDate.add(1, 'year')
+        break
+      default:
+        break
+    }
+
+    const newUser = new userModel({
+      userName: generateUserName(
+        reqPayLoad.name.first,
+        reqPayLoad.name.last,
+        reqPayLoad.registrationDate
+      ),
+      firstName: reqPayLoad.name.first,
+      lastName: reqPayLoad.name.last,
+      email: reqPayLoad.email,
+      mobile: reqPayLoad.mobile,
+      language: reqPayLoad.language,
+      age18Above: reqPayLoad.age18Above,
+      agreeToTerms: reqPayLoad.agreeToTerms,
+      membership: reqPayLoad.membership,
+      role: reqPayLoad.role,
+      isProfileDisabled: false,
+      isMembershipExpired: false,
+      membershipRenewalDate: renewalDate,
+      registrationDate: regDate,
+    })
+
+    // Save the new user in the collection
+    await newUser.save()
+
+    res.status(200).json({
+      status: 200,
+      RegStatus: 'Registered',
+      message: 'User registered successfully.',
+    })
+  } catch (error) {
+    console.error('Error during user registration:', error)
+    res.status(500).json({
+      message: 'An error occurred during user registration.',
+    })
+  }
+}
+
+function generateRandomDigits(length: number): string {
+  let result = ''
+  for (let i = 0; i < length; i++) {
+    result += Math.floor(Math.random() * 10)
+  }
+  return result
+}
+
+function generateUserName(
+  firstName: string,
+  lastName: string,
+  registrationDate: Date
+): string {
+  try {
+    const formattedDate = dayjs(registrationDate).format('DDMMYY')
+    const truncatedFirstName = firstName.substring(0, 4).toLowerCase()
+    const truncatedLastName = `${lastName.substring(0, 1).toUpperCase()}${lastName
+      .substring(1, 2)
+      .toLowerCase()}`
+
+    const userName = `${truncatedFirstName}${truncatedLastName}${formattedDate}`
+    return userName
+  } catch (error) {
+    console.error('Error occurred while formatting date:', error)
+    const randomDigits = generateRandomDigits(5)
+    const truncatedFirstName = firstName.substring(0, 4).toLowerCase()
+    const truncatedLastName = `${lastName.substring(0, 1).toUpperCase()}${lastName
+      .substring(1, 2)
+      .toLowerCase()}`
+
+    const userName = `${truncatedFirstName}${truncatedLastName}-${randomDigits}`
+    return userName
+  }
 }

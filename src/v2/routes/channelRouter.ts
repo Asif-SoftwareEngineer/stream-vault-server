@@ -51,7 +51,7 @@ const checkForDuplicateChannels = (req: Request, res: Response, next: NextFuncti
           message: `Error happened while checking duplicate record for channel name`,
         })
       } else if (result) {
-        console.log(result)
+
         let isChannelNameExists = result.find(({ _id }) => _id === req.body.name)
 
         if (isChannelNameExists) {
@@ -165,7 +165,6 @@ router.get('/check/:channelName', (req: Request, res: Response) => {
           message: `Error happened while checking duplicate record for channel name`,
         })
       } else if (result) {
-        console.log(result)
         let isChannelNameExists = result.find(({ _id }) => _id === req.params.channelName)
 
         if (isChannelNameExists) {

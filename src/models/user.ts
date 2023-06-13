@@ -12,13 +12,18 @@ export interface IUser {
   userId?: string
 
   userName: string
+  firstName: string
+  lastName: string
   email: string
   mobile: string
+  language: string
+  age18Above: boolean
+  agreeToTerms: boolean
   country?: string
   city?: string
   role: Role
   registrationDate: Dayjs
-  membershipPlan: IMemberPlan
+  membership: IMemberPlan
   membershipRenewalDate?: Dayjs
   picture?: string
   isProfileDisabled: boolean
@@ -35,13 +40,21 @@ const userSchema = new Schema<IUser>({
   userId: { type: String, required: false },
   userName: { type: String, required: true },
 
+  firstName: { type: String, required: true },
+  lastName: { type: String, required: true },
+
   email: { type: String, required: true },
   mobile: { type: String, required: true },
+
+  language: { type: String, required: true },
+  age18Above: { type: Boolean, required: true },
+  agreeToTerms: { type: Boolean, required: true },
+
   country: { type: String, required: false },
   city: { type: String, required: false },
   role: { type: String, required: true },
   registrationDate: { type: Date, required: true },
-  membershipPlan: { type: Object, ref: 'MemberPlan', required: true },
+  membership: { type: Object, ref: 'MemberPlan', required: true },
   membershipRenewalDate: { type: Date, required: false },
   picture: { type: String, required: false },
   isProfileDisabled: { type: Boolean, required: true },

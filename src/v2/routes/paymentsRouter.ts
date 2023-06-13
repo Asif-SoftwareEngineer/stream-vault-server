@@ -101,9 +101,7 @@ router.post('/approve', async (req: Request, res: Response) => {
 
     const regDto: IUser = currentPayment.metadata as IUser
 
-    if (
-      !regDto.membershipPlan.planType
-    ) {
+    if (!regDto.membership.planType) {
       const myError = new CustomError('Invalid Membership Type.', 301)
       throw myError
     }
@@ -260,8 +258,7 @@ router.post('/handle_error', async (req, res) => {
   // Destructure the necessary values from req.body using object destructuring
   const {
     payment: {
-      identifier: paymentIdCB = '', // get the value of identifier from payment object
-      transaction: { txid: txidCB = '', _link: txURL = '' } = {}, // get the value of txid and _link from transaction object if it exists
+      identifier: paymentIdCB = '', // get the value of txid and _link from transaction object if it exists
     } = {},
     userId,
   } = req.body.payment
@@ -280,7 +277,7 @@ router.post('/handle_error', async (req, res) => {
 
     // if (typeof error === 'object') {
     //   errorMessage = error?.message
-    console.log(txidCB + txURL)
+
     logDetails = JSON.stringify(error)
     // }
 

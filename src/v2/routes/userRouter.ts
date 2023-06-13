@@ -1,9 +1,14 @@
 import { Request, Response, Router } from 'express'
 import { ObjectId } from 'mongodb'
 
-import { generateCodeApiValidator } from '../../controllers/data-validator.controller'
+import {
+  generateCodeApiValidator,
+  registerUserApiValidator,
+  verifyMobileNumberApiValidator,
+} from '../../controllers/data-validator.controller'
 import {
   generateSixDigitCode,
+  getUserRegistrationStatus,
   registerUser,
   sendSmsForVerification,
   verifyUser,
@@ -126,11 +131,22 @@ router.post(
   }
 )
 
-router.post('/verifyMobileNumber', verifyUser, async (req, res) => {})
+router.post(
+  '/verifyMobileNumber',
+  verifyMobileNumberApiValidator,
+  verifyUser,
+  async (req, res) => {}
+)
 
 router.post(
-  '/registerMember',
-  // checkRegisteringUser,
+  '/checkRegisteringUser',
+  getUserRegistrationStatus,
+  async (req: Request, res: Response) => {}
+)
+
+router.post(
+  '/registerAsMember',
+  registerUserApiValidator,
   registerUser,
   async (req: Request, res: Response) => {}
 )

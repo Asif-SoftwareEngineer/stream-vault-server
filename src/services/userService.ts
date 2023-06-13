@@ -18,7 +18,6 @@
 //   const existingUser = await UserCollection.findOne({ email })
 
 //   if (existingUser) {
-//     console.log('Found existing user... deleting')
 //     await existingUser.delete()
 //   }
 
