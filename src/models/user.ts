@@ -1,4 +1,3 @@
-import { Dayjs } from 'dayjs'
 import { Schema, model } from 'mongoose'
 
 import { IChannel } from './channel'
@@ -22,9 +21,9 @@ export interface IUser {
   country?: string
   city?: string
   role: Role
-  registrationDate: Dayjs
+  registrationDate: Date
   membership: IMemberPlan
-  membershipRenewalDate?: Dayjs
+  membershipRenewalDate?: Date
   picture?: string
   isProfileDisabled: boolean
   isMembershipExpired: boolean
@@ -37,7 +36,6 @@ const userSchema = new Schema<IUser>({
   piUserId: { type: String, required: false },
   piUserName: { type: String, required: false },
 
-  userId: { type: String, required: false },
   userName: { type: String, required: true },
 
   firstName: { type: String, required: true },
@@ -54,7 +52,7 @@ const userSchema = new Schema<IUser>({
   city: { type: String, required: false },
   role: { type: String, required: true },
   registrationDate: { type: Date, required: true },
-  membership: { type: Object, ref: 'MemberPlan', required: true },
+  membership: { type: Object, ref: 'Membership', required: true },
   membershipRenewalDate: { type: Date, required: false },
   picture: { type: String, required: false },
   isProfileDisabled: { type: Boolean, required: true },
@@ -64,8 +62,8 @@ const userSchema = new Schema<IUser>({
   channels: [{ type: Object, ref: 'Channel' }],
 })
 
-// userSchema.virtual('userId').get(function () {
-//   return this._id
-// })
+userSchema.virtual('userId').get(function () {
+  return this._id
+})
 
 export const userModel = model<IUser>('User', userSchema)

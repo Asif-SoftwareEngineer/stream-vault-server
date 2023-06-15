@@ -4,7 +4,10 @@ import { NextFunction, Request, Response } from 'express'
 import * as config from './../config'
 import { accountVerificationModel } from '../models/account-verification'
 import { MembershipType } from '../models/enums'
+import { feePaymentModel } from '../models/membership-fee'
 import { userModel } from '../models/user'
+
+//import mongoose from 'mongoose'
 
 import dayjs = require('dayjs')
 
@@ -120,6 +123,9 @@ export const sendSmsForVerification = async (mobile: string, code: string) => {
 }
 
 export const registerUser = async (req: Request, res: Response) => {
+  //const session = await mongoose.startSession()
+  //session.startTransaction()
+
   try {
     const reqPayLoad = req.body
 
@@ -159,12 +165,24 @@ export const registerUser = async (req: Request, res: Response) => {
       role: reqPayLoad.role,
       isProfileDisabled: false,
       isMembershipExpired: false,
-      membershipRenewalDate: renewalDate,
-      registrationDate: regDate,
+      membershipRenewalDate: renewalDate.toDate(),
+      registrationDate: regDate.toDate(),
     })
 
     // Save the new user in the collection
     await newUser.save()
+
+    // create the payment record for this member.
+
+    const newFeePayment = new feePaymentModel({
+      userId: newUser.userId,
+      membership: newUser.membership,
+      paymentDate: regDate.toDate(),
+    })
+
+    await newFeePayment.save()
+
+    //await session.commitTransaction()
 
     res.status(200).json({
       status: 200,
@@ -172,10 +190,14 @@ export const registerUser = async (req: Request, res: Response) => {
       message: 'User registered successfully.',
     })
   } catch (error) {
+    //await session.abortTransaction()
+
     console.error('Error during user registration:', error)
     res.status(500).json({
       message: 'An error occurred during user registration.',
     })
+  } finally {
+    //session.endSession()
   }
 }
 
