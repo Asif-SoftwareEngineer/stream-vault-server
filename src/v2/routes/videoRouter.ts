@@ -3,9 +3,9 @@ import { randomBytes } from 'crypto'
 import { NextFunction, Request, Response, Router } from 'express'
 import { getClientIp } from 'request-ip'
 
-import * as uploadController from './../../controllers/fileUpload-controller'
 import { IUser, userModel } from '../../models/user'
 import { IVideo } from '../../models/video'
+import { uploadVideo } from '../../controllers/fileUpload-controller'
 
 const router = Router()
 
@@ -203,6 +203,6 @@ router.post(
   }
 )
 
-router.post('/upload/:userId/:channelId', uploadController.upload)
+router.post('/upload/:userId/:channelId', uploadVideo)
 
 export default router

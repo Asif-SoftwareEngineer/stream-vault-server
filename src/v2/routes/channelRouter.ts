@@ -4,6 +4,9 @@ import { NextFunction, Request, Response, Router } from 'express'
 
 import { IChannel } from '../../models/channel'
 import { IUser, userModel } from '../../models/user'
+import { uploadImage } from '../../controllers/fileUpload-controller'
+import { imageModel } from '../../models/image'
+import { ImageType } from '../../models/enums'
 
 const router = Router()
 
@@ -51,7 +54,6 @@ const checkForDuplicateChannels = (req: Request, res: Response, next: NextFuncti
           message: `Error happened while checking duplicate record for channel name`,
         })
       } else if (result) {
-
         let isChannelNameExists = result.find(({ _id }) => _id === req.body.name)
 
         if (isChannelNameExists) {
@@ -179,5 +181,50 @@ router.get('/check/:channelName', (req: Request, res: Response) => {
     }
   )
 })
+
+router.post(
+  '/uploadBannerImage/:userId',
+  uploadImage,
+  async (req: Request, res: Response) => {
+    try {
+      if (req.file == undefined) {
+        return res.status(422).json({ error: 'No image file provided.' })
+      }
+
+      const filter = { userId: req.params.userId, type: ImageType.ChannelBanner }
+
+      const update = {
+        fileName: req.file?.filename,
+        userId: req.params.userId,
+        type: ImageType.ChannelBanner,
+        imageUrl: req.file?.path,
+      }
+
+      const options = {
+        upsert: true, // Create a new document if it doesn't exist
+        new: true, // Return the updated document
+      }
+
+      const updatedImage = await imageModel.findOneAndUpdate(filter, update, options)
+
+      // construct the url for the banner image
+
+      const imageLocation: string = updatedImage!.imageUrl
+      const imageUrl: string = imageLocation
+        .replace(/\\/g, '/')
+        .replace('uploads/banners', 'channel/banner')
+
+      return res.status(200).json({
+        status: 200,
+        message: 'Banner Image uploaded successfully.', //,
+        image: updatedImage,
+        imageUrl: imageUrl,
+      })
+    } catch (error) {
+      console.error('Error saving image:', error)
+      return res.status(500).json({ error: 'Failed to save banner image.' })
+    }
+  }
+)
 
 export default router

@@ -1,22 +1,30 @@
-import { Request, Response } from 'express'
+import { NextFunction, Request, Response } from 'express'
 
-import uploadFile from '../middleware/uploadFileMiddleware'
+import fileUploadMiddleWare from '../middleware/uploadFileMiddleware'
 
-export const upload = async (req: Request, res: Response) => {
+export const uploadVideo = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    await uploadFile(req, res)
+    // if (req.file == undefined) {
+    //   return res.status(422).json({ error: 'No video file provided.' })
+    // }
 
-    if (req?.file == undefined) {
-      return res.status(400).send({ message: 'Please upload a file!' })
-    }
-
-    return res.status(200).send({
-      message: 'Uploaded the file successfully: ' + req.file?.originalname,
-      fileHandle: req?.file.path,
-    })
+    await fileUploadMiddleWare.uploadVideoFile(req, res)
+    next()
   } catch (err) {
-    return res.status(500).send({
-      message: `Could not upload the file: ${req.file?.originalname}. ${err}`,
-    })
+    return next(err)
+  }
+}
+
+export const uploadImage = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // if (req?.file == undefined) {
+    //   return res.status(422).json({ error: 'No image file provided.' })
+    // }
+
+    await fileUploadMiddleWare.uploadImageFile(req, res)
+
+    return next()
+  } catch (err) {
+    return next(err)
   }
 }

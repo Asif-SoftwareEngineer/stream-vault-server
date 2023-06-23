@@ -60,3 +60,9 @@ export enum MembershipType {
   Monthly = 'monthly',
   Annually = 'yearly',
 }
+
+export enum ImageType {
+  ChannelBanner = 'channelBanner',
+  ChanneProfilePicture = 'channelProfilePic',
+  VideoThumbnail = 'vidThumbnail',
+}

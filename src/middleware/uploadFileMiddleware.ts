@@ -1,12 +1,8 @@
-//import { NextFunction, Request, Response, Router } from 'express'
-
 import * as util from 'util'
 
 import * as multer from 'multer'
 
-//import path = require('path')
-
-let storage = multer.diskStorage({
+let videoStorage = multer.diskStorage({
   destination: function (req, file, cb) {
     // Uploads is the Upload_folder_name
     cb(null, 'uploads/videos')
@@ -34,13 +30,49 @@ let storage = multer.diskStorage({
   },
 })
 
-const maxSize = 900 * 1024 * 1024
+const maxSizeVideo = 900 * 1024 * 1024
 
-let uploadFile = multer({
-  storage: storage,
-  limits: { fileSize: maxSize },
-}).single('file')
+let uploadVideoFile = util.promisify(
+  multer({
+    storage: videoStorage,
+    limits: { fileSize: maxSizeVideo },
+  }).single('file')
+)
+//-----------------------------------------------------------------------------
 
-let uploadFileMiddleware = util.promisify(uploadFile)
+// Set up multer storage configuration for an Image File
+const imageStorage = multer.diskStorage({
+  destination: 'uploads/banners',
+  filename: function (req, file, cb) {
+    const fileName = file.originalname
+    const fileTypes = ['PNG', 'GIF', 'JPEG', 'JPG']
 
-export default uploadFileMiddleware
+    // Extract the file extension using a regular expression
+    const fileExtension: string = fileName.match(/\.(.{3})$/)?.[1]?.toUpperCase() || ''
+
+    // Check if the extracted extension matches any element of the fileTypes array
+    const isFileTypeMatched = fileTypes.includes(fileExtension)
+
+    if (isFileTypeMatched) {
+      cb(null, `${req.params.userId}-${file.fieldname}-${Date.now()}.${fileExtension}`)
+    } else {
+      cb(
+        Error(
+          `File upload only supports the following filetypes - $ ${fileTypes.join('|')}`
+        ),
+        ''
+      )
+    }
+  },
+})
+
+// Initialize multer upload
+
+let uploadImageFile = util.promisify(multer({ storage: imageStorage }).single('file'))
+
+const fileUploadMiddleWare = {
+  uploadVideoFile,
+  uploadImageFile,
+}
+
+export default fileUploadMiddleWare
