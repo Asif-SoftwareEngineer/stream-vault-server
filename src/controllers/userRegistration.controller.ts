@@ -1,17 +1,19 @@
 import { Dayjs } from 'dayjs'
 import { NextFunction, Request, Response } from 'express'
+import mongoose from 'mongoose'
 
 import * as config from './../config'
 import { accountVerificationModel } from '../models/account-verification'
+import { UserFindingrRequest } from '../models/customRequest'
 import { MembershipType } from '../models/enums'
 import { feePaymentModel } from '../models/membership-fee'
-import { userModel } from '../models/user'
+import { IUser, userModel } from '../models/user'
 
 //import mongoose from 'mongoose'
 
 import dayjs = require('dayjs')
 
-export const verifyUser = async (req: Request, res: Response, next: NextFunction) => {
+export async function verifyUser(req: Request, res: Response, next: NextFunction) {
   try {
     const verifyingMember = await accountVerificationModel.findOne({
       email: req.body.email,
@@ -40,7 +42,7 @@ export const verifyUser = async (req: Request, res: Response, next: NextFunction
   }
 }
 
-export const getUserRegistrationStatus = async (req: Request, res: Response) => {
+export async function getUserRegistrationStatus(req: Request, res: Response) {
   try {
     const { email, mobile } = req.body
 
@@ -75,11 +77,11 @@ export const getUserRegistrationStatus = async (req: Request, res: Response) => 
   }
 }
 
-export const generateSixDigitCode = async (
+export async function generateSixDigitCode(
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+) {
   const reqPayLoad = req.body
 
   const codeLength = 6
@@ -98,7 +100,7 @@ export const generateSixDigitCode = async (
   next()
 }
 
-export const sendSmsForVerification = async (mobile: string, code: string) => {
+export async function sendSmsForVerification(mobile: string, code: string) {
   return new Promise<void>((resolve, reject) => {
     const sgMail = require('@sendgrid/mail')
     sgMail.setApiKey(config.sendgrid_api_key)
@@ -122,10 +124,9 @@ export const sendSmsForVerification = async (mobile: string, code: string) => {
   })
 }
 
-export const registerUser = async (req: Request, res: Response) => {
+export async function registerUser(req: Request, res: Response) {
   //const session = await mongoose.startSession()
   //session.startTransaction()
-
   try {
     const reqPayLoad = req.body
 
@@ -173,7 +174,6 @@ export const registerUser = async (req: Request, res: Response) => {
     await newUser.save()
 
     // create the payment record for this member.
-
     const newFeePayment = new feePaymentModel({
       userId: newUser.userId,
       membership: newUser.membership,
@@ -183,7 +183,6 @@ export const registerUser = async (req: Request, res: Response) => {
     await newFeePayment.save()
 
     //await session.commitTransaction()
-
     res.status(200).json({
       status: 200,
       RegStatus: 'Registered',
@@ -191,7 +190,6 @@ export const registerUser = async (req: Request, res: Response) => {
     })
   } catch (error) {
     //await session.abortTransaction()
-
     console.error('Error during user registration:', error)
     res.status(500).json({
       message: 'An error occurred during user registration.',
@@ -201,7 +199,7 @@ export const registerUser = async (req: Request, res: Response) => {
   }
 }
 
-function generateRandomDigits(length: number): string {
+export function generateRandomDigits({ length }: { length: number }): string {
   let result = ''
   for (let i = 0; i < length; i++) {
     result += Math.floor(Math.random() * 10)
@@ -209,7 +207,7 @@ function generateRandomDigits(length: number): string {
   return result
 }
 
-function generateUserName(
+export function generateUserName(
   firstName: string,
   lastName: string,
   registrationDate: Date
@@ -225,7 +223,7 @@ function generateUserName(
     return userName
   } catch (error) {
     console.error('Error occurred while formatting date:', error)
-    const randomDigits = generateRandomDigits(5)
+    const randomDigits = generateRandomDigits({ length: 5 })
     const truncatedFirstName = firstName.substring(0, 4).toLowerCase()
     const truncatedLastName = `${lastName.substring(0, 1).toUpperCase()}${lastName
       .substring(1, 2)
@@ -234,4 +232,36 @@ function generateUserName(
     const userName = `${truncatedFirstName}${truncatedLastName}-${randomDigits}`
     return userName
   }
+}
+
+export function isUserExisting(
+  req: UserFindingrRequest,
+  res: Response,
+  next: NextFunction
+) {
+  const userId = req.params.userId
+
+  userModel.findById(
+    new mongoose.Types.ObjectId(userId),
+    function (err: Error, user: IUser) {
+      if (err) {
+        // Handle any error that occurred during the query
+        return res.status(500).send({
+          errorMessage: 'An error occurred while finding the user.',
+        })
+      }
+
+      if (!user) {
+        // No user found for the given userId
+        return res.status(404).send({
+          errorMessage: `No user found for the userId [${userId}].`,
+        })
+      }
+
+      req.user = user
+
+      // User found, proceed to the next middleware or route handler
+      return next()
+    }
+  )
 }

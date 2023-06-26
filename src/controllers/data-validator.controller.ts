@@ -2,16 +2,11 @@ import { NextFunction, Request, Response } from 'express'
 
 import Joi = require('joi')
 
-export const generateCodeApiValidator = async (
+export async function generateCodeApiValidator(
   req: Request,
   res: Response,
   next: NextFunction
-) => {
-  // return res.status(200).json({
-  //   status: 200,
-  //   message: 'A six-digit verification code has been sent to your mobile number.',
-  //})
-
+) {
   const verifiyingMemberSchema = Joi.object({
     firstName: Joi.string().required(),
     lastName: Joi.string().required(),
@@ -22,19 +17,17 @@ export const generateCodeApiValidator = async (
   const { error } = verifiyingMemberSchema.validate(req.body)
   if (error) {
     // Invalid request body, return an error response
-
-    res.status(400).json({ error: error.details[0].message })
-    return
+    return res.status(422).json({ errorMessage: error.details[0].message })
   } else {
-    next()
+    return next()
   }
 }
 
-export const verifyMobileNumberApiValidator = async (
+export async function verifyMobileNumberApiValidator(
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+) {
   const verifiyingMemberSchema = Joi.object({
     firstName: Joi.string().required(),
     lastName: Joi.string().required(),
@@ -47,19 +40,17 @@ export const verifyMobileNumberApiValidator = async (
 
   if (error) {
     // Invalid request query string, return an error response
-
-    res.status(400).json({ 1: error.details[0].message })
-    return
+    return res.status(422).json({ errorMessage: error.details[0].message })
   } else {
-    next()
+    return next()
   }
 }
 
-export const registerUserApiValidator = async (
+export async function registerUserApiValidator(
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+) {
   const verifiyingMemberSchema = Joi.object({
     name: Joi.object({
       first: Joi.string().required(),
@@ -84,10 +75,33 @@ export const registerUserApiValidator = async (
 
   if (error) {
     // Invalid request query string, return an error response
-
-    res.status(400).json({ 1: error.details[0].message })
-    return
+    return res.status(422).json({ errorMessage: error.details[0].message })
   } else {
-    next()
+    return next()
+  }
+}
+
+export async function newChannelApiValidator(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const newChannelSchema = Joi.object({
+    userId: Joi.string().required(),
+    name: Joi.string().required(),
+    category: Joi.string().required(),
+    handle: Joi.string().required(),
+  })
+
+  const { userId, name, category, handle } = req.body
+  const validatingData = { userId, name, category, handle }
+
+  const { error } = newChannelSchema.validate(validatingData)
+
+  if (error) {
+    // Invalid request query string, return an error response
+    return res.status(422).json({ errorMessage: error.details[0].message })
+  } else {
+    return next()
   }
 }
