@@ -30,7 +30,9 @@ app.use(
 
 app.set('trust proxy', true)
 
-app.use('/channel/banner', express.static(path.join('uploads', 'banners')))
+app.use('/channel/banners', express.static(path.join('uploads', 'banners')))
+app.use('/channel/profiles', express.static(path.join('uploads', 'profiles')))
+app.use('/video/thumbnail', express.static(path.join('uploads', 'thumbnails')))
 
 //---------------
 

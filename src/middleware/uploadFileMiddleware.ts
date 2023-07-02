@@ -42,7 +42,28 @@ let uploadVideoFile = util.promisify(
 
 // Set up multer storage configuration for an Image File
 const imageStorage = multer.diskStorage({
-  destination: 'uploads/banners',
+  destination: function (req, file, cb) {
+    // Get the imageType parameter from the request object
+    const imageType = req.params.imageType
+
+    // Specify the base upload directory
+    let uploadDirectory = 'uploads/'
+
+    // Check the imageType and update the upload directory accordingly
+    if (imageType === 'banner') {
+      uploadDirectory += 'banners/'
+    } else if (imageType === 'profile') {
+      uploadDirectory += 'profiles/'
+    } else if (imageType === 'thumbnail') {
+      uploadDirectory += 'thumbnails/'
+    } else {
+      // Handle invalid imageType value or set a default directory
+      uploadDirectory += 'default/'
+    }
+
+    // Pass the updated upload directory to the cb function
+    cb(null, uploadDirectory)
+  },
   filename: function (req, file, cb) {
     const fileName = file.originalname
     const fileTypes = ['PNG', 'GIF', 'JPEG', 'JPG']

@@ -1,101 +1,55 @@
-// import * as fs from 'fs'
-// import * as url from 'url'
+import { Request, Response, Router } from 'express'
 
-// import { Request, Response, Router } from 'express'
-// import { ObjectId } from 'mongodb'
-// import * as multer from 'multer'
+import { uploadImage } from '../../controllers/fileUpload-controller'
+import { ImageType } from '../../models/enums'
+import { imageModel } from '../../models/image'
 
-// import { fileFilter, fileStorage } from '../../config/multer'
-// import { userModel } from '../../models/user'
+const router = Router()
 
-// const router = Router()
+router.post(
+  '/uploadImage/:userId/:imageType',
+  uploadImage,
+  async (req: Request, res: Response) => {
+    try {
+      if (req.file == undefined) {
+        return res.status(422).json({ error: 'No image file provided.' })
+      }
 
-// const upload = multer({
-//   storage: fileStorage,
-//   limits: { fileSize: 1000000 * 5 },
-//   fileFilter: fileFilter,
-// })
+      const filter = { userId: req.params.userId, type: ImageType.ChannelBanner }
 
-// router.get('/:userId', async (req: Request, res: Response) => {
-//   const userObj = await userModel.findOne({ userId: new ObjectId(req.params.userId) })
-//   if (!userObj) {
-//     getResponseIfMediaUpdateFailed(res)
-//   } else {
-//     res.send({ status: 200, user: userObj })
-//   }
-// })
+      const update = {
+        fileName: req.file?.filename,
+        userId: req.params.userId,
+        type: ImageType.ChannelBanner,
+        imageUrl: req.file?.path,
+      }
 
-// router.put('/:userId', upload.single('image'), async (req: Request, res: Response) => {
-//   const updatedUserWithPics = await userModel.findOneAndUpdate(
-//     { _id: new ObjectId(req.params.userId) },
-//     {
-//       $addToSet: { picture: req.file?.filename },
-//     },
-//     { returnDocument: 'after' }
-//   )
+      const options = {
+        upsert: true, // Create a new document if it doesn't exist
+        new: true, // Return the updated document
+      }
 
-//   if (!updatedUserWithPics) {
-//     getResponseIfMediaUpdateFailed(res)
-//   } else {
-//     res.send({ status: 200, userWithUpdatedPictures: updatedUserWithPics })
-//   }
-// })
+      const updatedImage = await imageModel.findOneAndUpdate(filter, update, options)
 
-// router.delete('/delete', async (req: Request, res: Response) => {
-//   var url_parts = url.parse(req.url, true)
-//   var query = url_parts.query
+      // construct the url for the banner image
 
-//   const userId: string = query.userId as string
-//   const mediaId: string = query.mediaId as string
+      const imageUrl: string = req.file.path
+        .replace(/\\/g, '/') // Replace backslashes with forward slashes (for Windows file paths)
+        .replace('uploads/banners', 'channel/banners')
+        .replace('uploads/thumbnails', 'video/thumbnails')
+        .replace('uploads/profiles', 'channel/profiles')
 
-//   //first find the user Object
-//   const userObj = await userModel.findOne({ userId: userId })
+      return res.status(200).json({
+        status: 200,
+        message: `${req.params.imageType} Image uploaded successfully.`,
+        image: updatedImage,
+        imageUrl: imageUrl,
+      })
+    } catch (error) {
+      console.error('Error saving image:', error)
+      return res.status(500).json({ error: 'Failed to save banner image.' })
+    }
+  }
+)
 
-//   // if (!userObj) {
-//   //   getResponseIfMediaUpdateFailed(res)
-//   // } else {
-//   //   if (userObj.picture) {
-//   //     let imageId = mediaId.toString()
-//   //     const index = userObj.picture.indexOf(imageId) // find the media that need to be removed
-
-//   //     if (index === -1) {
-//   //       getResponseIfMediaUpdateFailed(res)
-//   //     } else {
-//   //       try {
-//   //         const fileName = userObj.channels.splice(index, 1)
-//   //         //Now update the user Object after deleting the media
-//   //         const updatedUserWithPics = await userModel.findOneAndUpdate(
-//   //           { userId: userId },
-//   //           {
-//   //             $set: userObj,
-//   //           },
-//   //           { returnDocument: 'after' }
-//   //         )
-
-//   //         if (!updatedUserWithPics) {
-//   //           getResponseIfMediaUpdateFailed(res)
-//   //         } else {
-//   //           let filePath: string = `C:/dev/videovault/server/uploads/${fileName}`
-//   //           fs.unlinkSync(filePath)
-//   //           res.send({
-//   //             status: 200,
-//   //             message: {
-//   //               message: 'File Deleted Successfully.',
-//   //               userWithUpdatedPictures: updatedUserWithPics,
-//   //             },
-//   //           })
-//   //         }
-//   //       } catch (error) {
-//   //         console.log(error)
-//   //         getResponseIfMediaUpdateFailed(res)
-//   //       }
-//   //     }
-//   //   }
-//   // }
-// })
-
-// export default router
-
-// const getResponseIfMediaUpdateFailed = (res: Response): void => {
-//   res.status(404).send({ message: 'Unble to update the media' })
-// }
+export default router

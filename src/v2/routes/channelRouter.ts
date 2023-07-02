@@ -125,51 +125,6 @@ router.get('/check/:channelName', (req: Request, res: Response) => {
 })
 
 router.post(
-  '/uploadBannerImage/:userId',
-  uploadImage,
-  async (req: Request, res: Response) => {
-    try {
-      if (req.file == undefined) {
-        return res.status(422).json({ error: 'No image file provided.' })
-      }
-
-      const filter = { userId: req.params.userId, type: ImageType.ChannelBanner }
-
-      const update = {
-        fileName: req.file?.filename,
-        userId: req.params.userId,
-        type: ImageType.ChannelBanner,
-        imageUrl: req.file?.path,
-      }
-
-      const options = {
-        upsert: true, // Create a new document if it doesn't exist
-        new: true, // Return the updated document
-      }
-
-      const updatedImage = await imageModel.findOneAndUpdate(filter, update, options)
-
-      // construct the url for the banner image
-
-      const imageLocation: string = updatedImage!.imageUrl
-      const imageUrl: string = imageLocation
-        .replace(/\\/g, '/')
-        .replace('uploads/banners', 'channel/banner')
-
-      return res.status(200).json({
-        status: 200,
-        message: 'Banner Image uploaded successfully.', //,
-        image: updatedImage,
-        imageUrl: imageUrl,
-      })
-    } catch (error) {
-      console.error('Error saving image:', error)
-      return res.status(500).json({ error: 'Failed to save banner image.' })
-    }
-  }
-)
-
-router.post(
   '/addChannel/:userId',
   newChannelApiValidator,
   isUserExisting,

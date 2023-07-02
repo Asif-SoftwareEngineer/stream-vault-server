@@ -3,6 +3,7 @@ import { Router } from 'express'
 import channelRouter from './routes/channelRouter'
 import locationRouter from './routes/locationRouter'
 import logRouter from './routes/logRouter'
+import mediaRouter from './routes/mediaRouter'
 import paymentRouter from './routes/paymentsRouter'
 import reactionsRouter from './routes/reactionsRouter'
 import searchRouter from './routes/searchRouter'
@@ -24,5 +25,6 @@ router.use('/stream', streamRouter)
 router.use('/log', logRouter)
 router.use('/reactions', reactionsRouter)
 router.use('/location', locationRouter)
+router.use('/media', mediaRouter)
 
 export default router
