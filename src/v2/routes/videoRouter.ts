@@ -1,11 +1,12 @@
-import { randomBytes } from 'crypto'
+//import { randomBytes } from 'crypto'
 
 import { NextFunction, Request, Response, Router } from 'express'
+import { Types } from 'mongoose'
 import { getClientIp } from 'request-ip'
 
-import { IUser, userModel } from '../../models/user'
-import { IVideo } from '../../models/video'
 import { uploadVideo } from '../../controllers/fileUpload-controller'
+import { User, userModel } from '../../models/user'
+import { videoModel } from '../../models/video'
 
 const router = Router()
 
@@ -54,7 +55,7 @@ const isUserandChannelExisting = (req: Request, res: Response, next: NextFunctio
         { 'channels.channelId': req.params.channelId },
       ],
     },
-    (err: Error, user: IUser) => {
+    (err: Error, user: User) => {
       if (!user) {
         res.status(404).send({
           message: 'Fetching list of videos failed due to invalid User or Channel.',
@@ -170,36 +171,57 @@ router.post(
   '/add/:userId/:channelId',
   validateVideoAddRequest,
   isUserandChannelExisting,
-  (req: Request, res: Response) => {
-    const videoObj = req.body as IVideo
-    videoObj.videoId = randomBytes(12).toString('hex')
-    videoObj.userId = req.params.userId
-    videoObj.channelId = req.params.channelId
+  async (req: Request, res: Response) => {
+    try {
+      const {
+        userId,
+        channelId,
+        title,
+        description,
+        category,
+        likes,
+        dislikes,
+        comments,
+        duration,
+        videoPathUrl,
+        thumbnailImageUrl,
+        audience,
+        visibility,
+        commentsPreference,
+        language,
+        location,
+        approved,
+      } = req.body
 
-    userModel.findOneAndUpdate(
-      {
-        userId: videoObj.userId,
-        'channels.channelId': videoObj.channelId,
-      },
-      {
-        $push: { 'channels.$.videos': videoObj },
-      },
-      {
-        new: true,
-      },
-      (error, updatedUser) => {
-        if (error || !updatedUser) {
-          res.status(500).send({ message: 'Video Addition failed!' })
-        } else {
-          res.status(200).send({
-            status: 200,
-            message: 'Video data added successfully to the channel',
-            videoAdded: videoObj,
-            updatedUser: updatedUser,
-          })
-        }
-      }
-    )
+      // Create a new video object
+      const video = new videoModel({
+        userId: new Types.ObjectId(userId),
+        channelId: new Types.ObjectId(channelId),
+        title,
+        description,
+        category,
+        likes,
+        dislikes,
+        comments,
+        duration,
+        videoPathUrl,
+        thumbnailImageUrl,
+        audience,
+        visibility,
+        commentsPreference,
+        language,
+        location,
+        approved,
+      })
+
+      // Save the video to the database
+      const savedVideo = await video.save()
+
+      res.status(201).json(savedVideo)
+    } catch (error) {
+      console.error(error)
+      res.status(500).json({ error: 'An error occurred while creating the video' })
+    }
   }
 )
 

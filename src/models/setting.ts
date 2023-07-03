@@ -1,24 +1,24 @@
 import { LanguageType } from './enums'
 
-interface IBlocked {
+interface Blocked {
   user_id: string
 }
 
-interface INotifyEmail {
+interface NotifyEmail {
   new_matches: boolean
   messages: boolean
   promo: boolean
 }
 
-interface IPushNotify {
+interface PushNotify {
   new_matches: boolean
   messages: boolean
   messages_like: boolean
 }
 
-export interface ISetting {
-  blocked: IBlocked[]
-  notifyByEmail: INotifyEmail
-  pushNotification: IPushNotify
+export interface Setting {
+  blocked: Blocked[]
+  notifyByEmail: NotifyEmail
+  pushNotification: PushNotify
   Language: LanguageType
 }

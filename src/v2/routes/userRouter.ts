@@ -15,7 +15,7 @@ import {
 } from '../../controllers/userRegistration.controller'
 import { accountVerificationModel } from '../../models/account-verification'
 import { CustomError } from '../../models/customErrorClass'
-import { IUser, userModel } from '../../models/user'
+import { User, userModel } from '../../models/user'
 
 const router = Router()
 
@@ -39,7 +39,7 @@ router.get('/:userId', async (req: Request, res: Response) => {
 })
 
 router.put('/:userId', async (req: Request, res: Response) => {
-  const userObj = req.body as IUser
+  const userObj = req.body as User
   //delete userObj._id
   await userModel.findOneAndUpdate(
     { _id: new ObjectId(req.params.userId) },

@@ -1,7 +1,7 @@
 // import { PhoneType, Role } from '../models/enums'
-// import { IUser, User, UserCollection } from '../models/user'
+// import { User, User, UserCollection } from '../models/user'
 
-// export async function createNewUser(userData: IUser): Promise<User | boolean> {
+// export async function createNewUser(userData: User): Promise<User | boolean> {
 //   const user = new User(userData)
 //   const success = await user.save()
 //   if (success) {

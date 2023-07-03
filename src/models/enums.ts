@@ -1,11 +1,3 @@
-/**
- * @swagger
- * components:
- *   schemas:
- *     Role:
- *       type: string
- *       enum: [none, clerk, cashier, manager]
- */
 export enum Role {
   None = 'none',
   Member = 'member',
@@ -13,14 +5,6 @@ export enum Role {
   Admin = 'admin',
 }
 
-/**
- * @swagger
- * components:
- *   schemas:
- *     PhoneType:
- *       type: string
- *       enum: [none, mobile, home, work]
- */
 export enum PhoneType {
   None = 'none',
   Mobile = 'mobile',

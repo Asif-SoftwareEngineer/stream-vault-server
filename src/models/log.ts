@@ -2,7 +2,7 @@ import { Schema, model } from 'mongoose'
 
 import { LogEventType } from './enums'
 
-export interface ILogVideo {
+export interface LogVideo {
   userId: string
   ip: string
   country: string
@@ -13,7 +13,7 @@ export interface ILogVideo {
   view_duration: number
 }
 
-export interface ILogUser {
+export interface LogUser {
   userId: string
   ip: string
   country: string
@@ -23,7 +23,7 @@ export interface ILogUser {
   details?: string
 }
 
-const logVideoSchema = new Schema<ILogVideo>({
+const logVideoSchema = new Schema<LogVideo>({
   userId: { type: String, required: true },
   ip: { type: String, required: true },
   country: { type: String, required: false },
@@ -34,7 +34,7 @@ const logVideoSchema = new Schema<ILogVideo>({
   view_duration: { type: Number, required: false },
 })
 
-const logUserSchema = new Schema<ILogUser>({
+const logUserSchema = new Schema<LogUser>({
   userId: { type: String, required: true },
   ip: { type: String, required: true },
   country: { type: String, required: false },
@@ -44,6 +44,6 @@ const logUserSchema = new Schema<ILogUser>({
   details: { type: String, required: false },
 })
 
-export const logVideoModel = model<ILogVideo>('LogVideo', logVideoSchema)
+export const logVideoModel = model<LogVideo>('LogVideo', logVideoSchema)
 
-export const logUserModel = model<ILogVideo>('LogUser', logUserSchema)
+export const logUserModel = model<LogVideo>('LogUser', logUserSchema)

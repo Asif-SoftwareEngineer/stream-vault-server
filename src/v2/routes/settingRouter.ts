@@ -1,7 +1,7 @@
 import { Request, Response, Router } from 'express'
-
-import { ISetting } from '../../models/setting'
 import { ObjectId } from 'mongodb'
+
+import { Setting } from '../../models/setting'
 import { userModel } from '../../models/user'
 
 const router = Router()
@@ -19,7 +19,7 @@ router.get('/:userId', async (req: Request, res: Response) => {
 })
 
 router.put('/:userId', async (req: Request, res: Response) => {
-  const settingObj = req.body as ISetting
+  const settingObj = req.body as Setting
 
   const updatedUser = await userModel.findOneAndUpdate(
     { _id: new ObjectId(req.params.userId) },

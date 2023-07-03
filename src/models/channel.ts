@@ -1,14 +1,16 @@
-import { IVideo } from './video'
+import { Types } from 'mongoose'
 
-export interface IChannel {
-  userId: string
-  channelId: string
-  profileImageUrl?: string
-  bannerImageUrl?: string
+import { Video } from './video'
+
+export interface Channel {
+  userId: Types.ObjectId
+  channelId: Types.ObjectId
   name: string
   description: string
   category: string
   handle: string
-  videos?: IVideo[]
-  followers?: string[]
+  profileImageUrl?: string
+  bannerImageUrl?: string
+  followers?: Types.ObjectId[]
+  videos?: Video[]
 }

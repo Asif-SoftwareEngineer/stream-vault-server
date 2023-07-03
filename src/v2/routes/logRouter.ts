@@ -3,7 +3,7 @@ import { Request, Response, Router } from 'express'
 
 import { errorLogger, infoLogger } from '../../loggers'
 import { LogEventType } from '../../models/enums'
-import { ILogUser, logUserModel, logVideoModel } from '../../models/log'
+import { LogUser, logUserModel, logVideoModel } from '../../models/log'
 
 const router = Router()
 
@@ -158,7 +158,7 @@ async function findUserLog(
   userId: string,
   eventType: LogEventType,
   date?: Date
-): Promise<ILogUser | null> {
+): Promise<LogUser | null> {
   let logUser
 
   if (!date) {

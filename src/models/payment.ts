@@ -1,16 +1,15 @@
 import { Schema, model } from 'mongoose'
 
-export interface IPayment {
+export interface Payment {
   amount: number
   uid: string
   created_at: Date
   paid: boolean
   paymentId: string
-
-  memo?: string
-  cancelled?: boolean
   developer_approved?: boolean
   transaction_verified?: boolean
+  cancelled?: boolean
+  memo?: string
   linkUrl?: string
   txid?: string
 }
@@ -37,7 +36,7 @@ export interface PaymentDTO {
   }
 }
 
-const paymentSchema = new Schema<IPayment>({
+const paymentSchema = new Schema<Payment>({
   amount: { type: Number, required: true },
   uid: { type: String, required: true },
   created_at: { type: Date, required: true },
@@ -52,4 +51,4 @@ const paymentSchema = new Schema<IPayment>({
   txid: { type: String, required: false },
 })
 
-export const paymentModel = model<IPayment>('Payment', paymentSchema)
+export const paymentModel = model<Payment>('Payment', paymentSchema)

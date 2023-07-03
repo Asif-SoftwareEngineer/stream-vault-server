@@ -11,7 +11,7 @@ export interface UserDTO {
   username?: string // The user's Pi username. Requires the `username` scope.
 }
 
-export interface IPiUser {
+export interface PiUser {
   accessToken: string
   uid: string
   username: string
@@ -20,7 +20,7 @@ export interface IPiUser {
   signin_date: string
 }
 
-const piUserSchema = new Schema<IPiUser>({
+const piUserSchema = new Schema<PiUser>({
   accessToken: { type: String, required: true },
   uid: { type: String, required: true },
   username: { type: String, required: true },
@@ -29,4 +29,4 @@ const piUserSchema = new Schema<IPiUser>({
   signin_date: { type: String, required: true },
 })
 
-export const piUserModel = model<IPiUser>('Signin', piUserSchema)
+export const piUserModel = model<PiUser>('Signin', piUserSchema)

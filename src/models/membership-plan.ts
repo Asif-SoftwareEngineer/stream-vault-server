@@ -1,6 +1,6 @@
 import { MembershipType } from "./enums"
 
-export interface IMemberPlan {
+export interface MemberPlan {
   planType: MembershipType
   amount: number
   paymentMode: string

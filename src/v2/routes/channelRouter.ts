@@ -1,16 +1,14 @@
 import { randomBytes } from 'crypto'
 
 import { Request, Response, Router } from 'express'
+import { Types } from 'mongoose'
 
 import { checkForDuplicateChannels } from '../../controllers/channel.controller'
 import { newChannelApiValidator } from '../../controllers/data-validator.controller'
-import { uploadImage } from '../../controllers/fileUpload-controller'
 import { isUserExisting } from '../../controllers/userRegistration.controller'
-import { IChannel } from '../../models/channel'
+import { Channel } from '../../models/channel'
 import { UserFindingrRequest } from '../../models/customRequest'
-import { ImageType } from '../../models/enums'
-import { imageModel } from '../../models/image'
-import { IUser, userModel } from '../../models/user'
+import { User, userModel } from '../../models/user'
 
 const router = Router()
 
@@ -39,7 +37,7 @@ router.get('/:userId', (req: Request, res: Response) => {
     {
       userId: req.params.userId,
     },
-    function (err: Error, user: IUser) {
+    function (err: Error, user: User) {
       if (user === null || typeof user === 'undefined') {
         res.status(404).send({
           status: 404,
@@ -68,7 +66,7 @@ router.get(
   '/:userId/:channelId',
   isUserExisting,
   (req: UserFindingrRequest, res: Response) => {
-    const channelId = req.params.channelId
+    const channelId = new Types.ObjectId(req.params.channelId)
 
     // Access the user object from the request
     const user = req.user!
@@ -125,14 +123,14 @@ router.get('/check/:channelName', (req: Request, res: Response) => {
 })
 
 router.post(
-  '/addChannel/:userId',
+  '/add/:userId',
   newChannelApiValidator,
   isUserExisting,
   checkForDuplicateChannels,
   async (req: Request, res: Response) => {
-    const channelObj = req.body as IChannel
-    channelObj.channelId = randomBytes(12).toString('hex')
-    channelObj.userId = req.params.userId
+    const channelObj = req.body as Channel
+    channelObj.channelId = new Types.ObjectId(randomBytes(12).toString('hex'))
+    channelObj.userId = new Types.ObjectId(req.params.userId)
     channelObj.videos = []
     channelObj.followers = []
 

@@ -1,15 +1,11 @@
-import { Schema, model } from 'mongoose'
+import { Schema, Types, model } from 'mongoose'
 
-import { IChannel } from './channel'
+import { Channel } from './channel'
 import { Role } from './enums'
-import { IMemberPlan } from './membership-plan'
-import { ISetting } from './setting'
+import { MemberPlan } from './membership-plan'
+import { Setting } from './setting'
 
-export interface IUser {
-  piUserId?: string
-  piUserName?: string
-  userId?: string
-
+export interface User {
   userName: string
   firstName: string
   lastName: string
@@ -18,21 +14,37 @@ export interface IUser {
   language: string
   age18Above: boolean
   agreeToTerms: boolean
-  country?: string
-  city?: string
   role: Role
   registrationDate: Date
-  membership: IMemberPlan
+  membership: MemberPlan
   membershipRenewalDate?: Date
+  piUserId?: string
+  piUserName?: string
+  userId?: string
+  country?: string
+  city?: string
   picture?: string
   isProfileDisabled: boolean
   isMembershipExpired: boolean
-  watchList?: string[]
-  settings?: ISetting
-  channels?: IChannel[]
+  watchList?: Types.ObjectId[]
+  settings?: Setting
+  channels?: Channel[]
 }
 
-const userSchema = new Schema<IUser>({
+const channelSchema = new Schema<Channel>({
+  userId: { type: Schema.Types.ObjectId, required: true },
+  channelId: { type: Schema.Types.ObjectId, required: true },
+  profileImageUrl: { type: String, required: false },
+  bannerImageUrl: { type: String, required: false },
+  name: { type: String, required: true },
+  description: { type: String, required: true },
+  category: { type: String, required: true },
+  handle: { type: String, required: true },
+  videos: [{ type: Schema.Types.ObjectId, required: false }],
+  followers: [{ type: Schema.Types.ObjectId, required: false }],
+})
+
+const userSchema = new Schema<User>({
   piUserId: { type: String, required: false },
   piUserName: { type: String, required: false },
 
@@ -50,20 +62,16 @@ const userSchema = new Schema<IUser>({
 
   country: { type: String, required: false },
   city: { type: String, required: false },
-  role: { type: String, required: true },
+  role: { type: String, enum: Object.values(Role), required: true },
   registrationDate: { type: Date, required: true },
-  membership: { type: Object, ref: 'Membership', required: true },
+  membership: { type: Object, required: true },
   membershipRenewalDate: { type: Date, required: false },
   picture: { type: String, required: false },
   isProfileDisabled: { type: Boolean, required: true },
   isMembershipExpired: { type: Boolean, required: true },
-  watchList: [String],
+  watchList: [{ type: Schema.Types.ObjectId, required: false }],
   settings: { type: Object, ref: 'Setting' },
-  channels: [{ type: Object, ref: 'Channel' }],
+  channels: channelSchema,
 })
 
-userSchema.virtual('userId').get(function () {
-  return this._id
-})
-
-export const userModel = model<IUser>('User', userSchema)
+export const userModel = model<User>('User', userSchema)

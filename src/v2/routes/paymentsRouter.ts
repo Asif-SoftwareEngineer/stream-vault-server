@@ -7,7 +7,7 @@ import { errorLogger, infoLogger } from '../../loggers'
 import { CustomError } from '../../models/customErrorClass'
 import { LogEventType } from '../../models/enums'
 import { PaymentDTO, paymentModel } from '../../models/payment'
-import { IUser } from '../../models/user'
+import { User } from '../../models/user'
 import platformAPIClient from '../../platformApiClient'
 
 const router = Router()
@@ -99,7 +99,7 @@ router.post('/approve', async (req: Request, res: Response) => {
 
     // Check that user has specified the membership interval
 
-    const regDto: IUser = currentPayment.metadata as IUser
+    const regDto: User = currentPayment.metadata as User
 
     if (!regDto.membership.planType) {
       const myError = new CustomError('Invalid Membership Type.', 301)
@@ -168,7 +168,7 @@ router.post('/complete', async (req, res) => {
 
     const { data: currentPayment } = paymentObj
 
-    const registeringMember: IUser = currentPayment.metadata as IUser
+    const registeringMember: User = currentPayment.metadata as User
 
     infoLogger.info('[Router: payments/complete]: About to log the payment approval.')
     const url = config.server_url

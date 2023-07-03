@@ -7,7 +7,7 @@ import { accountVerificationModel } from '../models/account-verification'
 import { UserFindingrRequest } from '../models/customRequest'
 import { MembershipType } from '../models/enums'
 import { feePaymentModel } from '../models/membership-fee'
-import { IUser, userModel } from '../models/user'
+import { User, userModel } from '../models/user'
 
 //import mongoose from 'mongoose'
 
@@ -243,7 +243,7 @@ export function isUserExisting(
 
   userModel.findById(
     new mongoose.Types.ObjectId(userId),
-    function (err: Error, user: IUser) {
+    function (err: Error, user: User) {
       if (err) {
         // Handle any error that occurred during the query
         return res.status(500).send({
