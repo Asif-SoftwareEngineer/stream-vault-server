@@ -1,5 +1,4 @@
 import { Schema, Types, model } from 'mongoose'
-
 import { Channel } from './channel'
 import { Role } from './enums'
 import { MemberPlan } from './membership-plan'
@@ -71,7 +70,7 @@ const userSchema = new Schema<User>({
   isMembershipExpired: { type: Boolean, required: true },
   watchList: [{ type: Schema.Types.ObjectId, required: false }],
   settings: { type: Object, ref: 'Setting' },
-  channels: channelSchema,
+  channels: [channelSchema],
 })
 
 export const userModel = model<User>('User', userSchema)

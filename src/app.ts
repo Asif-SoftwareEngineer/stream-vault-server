@@ -10,12 +10,8 @@ import api from './api'
 
 const app = express()
 
-let jsonParser = bodyParser.json()
-
-let urlencodedParser = bodyParser.urlencoded({ extended: false })
-
-app.use(jsonParser)
-app.use(urlencodedParser)
+app.use(bodyParser.json({ limit: '2048mb' }))
+app.use(bodyParser.urlencoded({ limit: '2048mb', extended: true }))
 
 // let corsOptions = {
 //   origin: 'http://localhost:4200',
@@ -32,7 +28,8 @@ app.set('trust proxy', true)
 
 app.use('/channel/banners', express.static(path.join('uploads', 'banners')))
 app.use('/channel/profiles', express.static(path.join('uploads', 'profiles')))
-app.use('/video/thumbnail', express.static(path.join('uploads', 'thumbnails')))
+app.use('/video/thumbnails', express.static(path.join('uploads', 'thumbnails')))
+app.use('/videos', express.static(path.join('uploads', 'videos')))
 
 //---------------
 
@@ -47,7 +44,7 @@ app.use('/vidz', express.static(path.join('uploads', 'videos')))
 
 app.use('/stream/:file', express.static(path.join('uploads', 'videos')))
 
-app.use(express.urlencoded({ extended: true }))
+//app.use(express.urlencoded({ extended: true }))
 
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')))

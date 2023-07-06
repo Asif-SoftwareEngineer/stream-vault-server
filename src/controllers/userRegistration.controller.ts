@@ -183,8 +183,8 @@ export async function registerUser(req: Request, res: Response) {
     await newFeePayment.save()
 
     //await session.commitTransaction()
-    res.status(200).json({
-      status: 200,
+    res.status(201).json({
+      status: 201,
       RegStatus: 'Registered',
       message: 'User registered successfully.',
     })

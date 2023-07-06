@@ -1,12 +1,18 @@
-//import { randomBytes } from 'crypto'
-
 import { NextFunction, Request, Response, Router } from 'express'
 import { Types } from 'mongoose'
 import { getClientIp } from 'request-ip'
 
 import { uploadVideo } from '../../controllers/fileUpload-controller'
-import { User, userModel } from '../../models/user'
+import { userModel } from '../../models/user'
 import { videoModel } from '../../models/video'
+
+//import * as config from '../../config'
+import { VideoPublishStage, VideoUploadStatus } from '../../models/enums'
+import { isUserAndChannelExisting } from '../../controllers/video.controller'
+
+//const fs = require('fs')
+//const path = require('path')
+const { ObjectId } = require('mongodb')
 
 const router = Router()
 
@@ -44,27 +50,6 @@ const validateVideoAddRequest = (req: Request, res: Response, next: NextFunction
   } else {
     next()
   }
-}
-
-//Check if the user and its channel exist
-const isUserandChannelExisting = (req: Request, res: Response, next: NextFunction) => {
-  userModel.findOne(
-    {
-      $and: [
-        { userId: req.params.userId },
-        { 'channels.channelId': req.params.channelId },
-      ],
-    },
-    (err: Error, user: User) => {
-      if (!user) {
-        res.status(404).send({
-          message: 'Fetching list of videos failed due to invalid User or Channel.',
-        })
-      } else {
-        next()
-      }
-    }
-  )
 }
 
 router.get(
@@ -170,7 +155,7 @@ router.get(
 router.post(
   '/add/:userId/:channelId',
   validateVideoAddRequest,
-  isUserandChannelExisting,
+  isUserAndChannelExisting,
   async (req: Request, res: Response) => {
     try {
       const {
@@ -220,11 +205,87 @@ router.post(
       res.status(201).json(savedVideo)
     } catch (error) {
       console.error(error)
-      res.status(500).json({ error: 'An error occurred while creating the video' })
+      res.status(500).json({ error: 'An error occurred while creating the video.' })
+    }
+  }
+)
+
+router.post(
+  '/uploadVideo/:userId/:channelId',
+  isUserAndChannelExisting,
+  async (req: Request, res: Response) => {
+    try {
+      //const { thumbnail, video } = req.body
+      const { userId, channelId } = req.params
+      const videoId: Types.ObjectId = new ObjectId()
+
+      //const thumbnailData = thumbnail.replace(/^data:image\/png;base64,/, '')
+      const thumbnailFileName = `${videoId}.png`
+      //const thumbnailPath = path.join(config.thumbnailPath, thumbnailFileName)
+      const thumbnailUrl = `video/thumbnails/${thumbnailFileName}`
+
+      //const videoData = video.replace(/^data:video\/mp4;base64,/, '')
+      const videoFileName = `${videoId}.mp4`
+      //const videoPath = path.join(config.videoUploadPath, videoFileName)
+      const videoUrl = `videos/${videoFileName}`
+
+      // await Promise.all([
+      //   saveFile(thumbnailData, thumbnailPath),
+      //   saveFile(videoData, videoPath),
+      // ])
+
+      const videoObj = new videoModel({
+        userId: new Types.ObjectId(userId),
+        channelId: new Types.ObjectId(channelId),
+        title: 'dummy-title',
+        description: 'dummy-description',
+        category: 'dummy-category',
+        likes: [],
+        dislikes: [],
+        comments: [],
+        duration: 0,
+        videoPathUrl: videoUrl,
+        thumbnailImageUrl: thumbnailUrl,
+        audience: 'dummy-audience',
+        visibility: 'dummy-visibility',
+        commentsPreference: 'commentsPreference',
+        language: 'dummy-language',
+        location: 'dummy-location',
+        uploadStatus: VideoUploadStatus.Completed,
+        publishStage: VideoPublishStage.Uploaded,
+      })
+
+      //const savedVideo = await videoObj.save()
+
+      if (videoObj) {
+        res.status(201).json({
+          status: 201,
+          video: videoObj,
+          message: 'Video uploaded successfully.',
+        })
+      }
+    } catch (error) {
+      console.error('Error uploading video:', error)
+      res.status(500).json({
+        status: 500,
+        errorMessage: 'Internal server error.',
+      })
     }
   }
 )
 
 router.post('/upload/:userId/:channelId', uploadVideo)
+
+// async function saveFile(data: string, filePath: string): Promise<string> {
+//   return new Promise((resolve, reject) => {
+//     fs.writeFile(filePath, data, 'base64', (error: any) => {
+//       if (error) {
+//         reject(error)
+//       } else {
+//         resolve(filePath)
+//       }
+//     })
+//   })
+// }
 
 export default router

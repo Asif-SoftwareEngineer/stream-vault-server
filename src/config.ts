@@ -1,3 +1,5 @@
+import path = require('path')
+
 export const IsProd = process.env.NODE_ENV === 'production'
 export const Port = process.env.PORT || 3000
 export const MongoUri =
@@ -23,3 +25,7 @@ export const mongo_db_name = process.env.MONGODB_DATABASE_NAME || 'videovault_db
 export const mongo_user = process.env.MONGODB_USERNAME || 'Allah786online$$'
 export const mongo_password = process.env.MONGODB_PASSWORD || 'asifj'
 export const frontend_url = process.env.FRONTEND_URL || 'http://localhost:3314'
+export const thumbnailPath =
+  process.env.THUMBNAIL_PATH || path.resolve(__dirname, '../uploads/thumbnails')
+export const videoUploadPath =
+  process.env.videoUploadPath_PATH || path.resolve(__dirname, '../uploads/videos')

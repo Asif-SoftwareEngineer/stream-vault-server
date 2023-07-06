@@ -134,14 +134,14 @@ router.post(
     channelObj.videos = []
     channelObj.followers = []
 
-    // const updatedUser = await userModel.findOneAndUpdate(
-    //   { userId: channelObj.userId },
-    //   {
-    //     $addToSet: { channels: { $each: [channelObj] } },
-    //   },
-    //   { returnDocument: 'after' }
-    // )
-    const updatedUser = true
+    const updatedUser = await userModel.findOneAndUpdate(
+      { userId: channelObj.userId },
+      {
+        $addToSet: { channels: { $each: [channelObj] } },
+      },
+      { returnDocument: 'after' }
+    )
+    //const updatedUser = true
 
     if (!updatedUser) {
       res.status(404).send({
@@ -149,8 +149,8 @@ router.post(
         message: 'Channel Addition failed!',
       })
     } else {
-      res.status(200).send({
-        status: 200,
+      res.status(201).send({
+        status: 201,
         message: 'Channel has been created successfully.',
         channelAdded: channelObj,
       })
