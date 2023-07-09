@@ -1,164 +1,50 @@
-import { NextFunction, Request, Response, Router } from 'express'
+import { Request, Response, Router } from 'express'
 import { Types } from 'mongoose'
-import { getClientIp } from 'request-ip'
 
-import { uploadVideo } from '../../controllers/fileUpload-controller'
-import { userModel } from '../../models/user'
+import { newVideoApiValidator } from '../../controllers/data-validator.controller'
+import {
+  isUserAndChannelExisting,
+  uploadVideoFile,
+} from '../../controllers/video.controller'
+import { videoUploadRequest } from '../../models/customRequest'
+import { VideoPublishStage, VideoUploadStatus } from '../../models/enums'
 import { videoModel } from '../../models/video'
 
-//import * as config from '../../config'
-import { VideoPublishStage, VideoUploadStatus } from '../../models/enums'
-import { isUserAndChannelExisting } from '../../controllers/video.controller'
-
-//const fs = require('fs')
-//const path = require('path')
-const { ObjectId } = require('mongodb')
+// interface videoUploadRequest extends Request {
+//   videoUrl?: string
+//   thumbnailUrl?: string
+// }
 
 const router = Router()
 
-const validateDataForGetAllVidzRequest = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  if (!req.params.watchingUserId) {
-    res.status(400).json({
-      message: 'UserId is missing.',
-    })
-  } else {
-    const ip = getClientIp(req)!
-    req.params.watchingUserId =
-      req.params.watchingUserId === 'visitor' ? `vis-${ip}` : req.params.watchingUserId
-    next()
-  }
-}
+router.get('/:videoId', async (req: Request, res: Response) => {
+  try {
+    const videoId: string = req.params.videoId
+    console.log('Video ID: ' + videoId)
+    const video = await videoModel.findById(videoId)
 
-const validateVideoAddRequest = (req: Request, res: Response, next: NextFunction) => {
-  const data = req.body
-
-  if (
-    !req.params.userId ||
-    !req.params.channelId ||
-    !data.title ||
-    !data.description ||
-    !data.category ||
-    !data.tags
-  ) {
-    res.status(400).json({
-      message: 'Video creation request failed due to insufficient information.',
-    })
-  } else {
-    next()
-  }
-}
-
-router.get(
-  '/:watchingUserId',
-  validateDataForGetAllVidzRequest,
-  async (req: Request, res: Response) => {
-    const serverUrl: string = `${req.protocol}://${req.get('host')}`
-    const watchingUserId: string = req.params.watchingUserId
-
-    const pipeline = [
-      // Match documents that have at least one video
-      {
-        $match: {
-          'channels.videos': { $exists: true },
-        },
-      },
-      // Unwind the channels array to create a separate document for each channel
-      {
-        $unwind: '$channels',
-      },
-      // Unwind the videos array to create a separate document for each video
-      {
-        $unwind: '$channels.videos',
-      },
-      // Project the fields you want to include in the output
-      {
-        $project: {
-          _id: 0,
-          userId: 1,
-          channelId: '$channels.channelId',
-          videoId: '$channels.videos.videoId',
-          userName: '$streamVault_username',
-          channelName: '$channels.name',
-          title: '$channels.videos.title',
-          description: '$channels.videos.description',
-          url: {
-            $concat: [
-              serverUrl,
-              '/v2/stream/',
-              '$channels.videos.filePath',
-              '/',
-              watchingUserId,
-              '/',
-              '$channels.videos.videoId',
-            ],
-          },
-          thumbnail: {
-            $concat: [serverUrl, '/thumbnails/vidz/', '$channels.videos.thumbnail'],
-          },
-          likes: {
-            $size: {
-              $filter: {
-                input: '$channels.videos.reactions',
-                cond: { $eq: ['$$this.reactionType', 'like'] },
-              },
-            },
-          },
-          dislikes: {
-            $size: {
-              $filter: {
-                input: '$channels.videos.reactions',
-                cond: { $eq: ['$$this.reactionType', 'dislike'] },
-              },
-            },
-          },
-
-          yourReaction: {
-            $ifNull: [
-              {
-                $arrayElemAt: [
-                  {
-                    $filter: {
-                      input: '$channels.videos.reactions',
-                      cond: { $eq: ['$$this.reactingUserId', watchingUserId] },
-                    },
-                  },
-                  0,
-                ],
-              },
-              { reactionType: null },
-            ],
-          },
-        },
-      },
-    ]
-
-    const videosList = await userModel.aggregate(pipeline).exec()
-
-    if (videosList === undefined) {
-      res.status(404).send({
-        status: 404,
-        message: 'No videos found for the specified userId.',
-      })
-    } else {
-      res.status(200).send({
-        status: 200,
-        videosList,
-      })
+    if (!video) {
+      return res.status(404).json({ errorMessage: 'Video not found!' })
     }
+
+    return res.status(200).json({
+      status: 200,
+      video,
+    })
+  } catch (error) {
+    console.error('Error:', error)
+    return res.status(500).json({ error: 'Internal Server Error' })
   }
-)
+})
 
 router.post(
-  '/add/:userId/:channelId',
-  validateVideoAddRequest,
+  '/addVideoDocument',
+  newVideoApiValidator,
   isUserAndChannelExisting,
   async (req: Request, res: Response) => {
     try {
       const {
+        videoId,
         userId,
         channelId,
         title,
@@ -175,68 +61,67 @@ router.post(
         commentsPreference,
         language,
         location,
-        approved,
       } = req.body
 
-      // Create a new video object
-      const video = new videoModel({
-        userId: new Types.ObjectId(userId),
-        channelId: new Types.ObjectId(channelId),
-        title,
-        description,
-        category,
-        likes,
-        dislikes,
-        comments,
-        duration,
-        videoPathUrl,
-        thumbnailImageUrl,
-        audience,
-        visibility,
-        commentsPreference,
-        language,
-        location,
-        approved,
+      // Find the video document by videoId
+      const video = await videoModel.findById(videoId)
+
+      if (!video) {
+        return res.status(404).json({
+          status: 404,
+          errorMessage: 'Video not found.',
+        })
+      }
+
+      // Update the video object
+      video.userId = new Types.ObjectId(userId)
+      video.channelId = new Types.ObjectId(channelId)
+      video.title = title
+      video.description = description
+      video.category = category
+      video.likes = likes
+      video.dislikes = dislikes
+      video.comments = comments
+      video.duration = duration
+      video.videoPathUrl = videoPathUrl
+      video.thumbnailImageUrl = thumbnailImageUrl
+      video.audience = audience
+      video.visibility = visibility
+      video.commentsPreference = commentsPreference
+      video.language = language
+      video.location = location
+      video.uploadStatus = VideoUploadStatus.Pending
+      video.publishStage = VideoPublishStage.InformationAdded
+
+      // Save the updated video to the database
+      const updatedVideo = await video.save()
+
+      return res.status(200).json({
+        status: 200,
+        message:
+          'The uploaded video is currently undergoing review by our content validation team [Validators] and advanced artificial intelligence models. Once the content is verified and approved, it will be published promptly for your audience to enjoy. We appreciate your patience during this process to ensure the highest quality and compliance with our content standards.',
+        updatedVideo,
       })
-
-      // Save the video to the database
-      const savedVideo = await video.save()
-
-      res.status(201).json(savedVideo)
     } catch (error) {
       console.error(error)
-      res.status(500).json({ error: 'An error occurred while creating the video.' })
+      return res.status(500).json({
+        status: 500,
+        errorMessage: 'An error occurred while updating the video.',
+      })
     }
   }
 )
 
 router.post(
-  '/uploadVideo/:userId/:channelId',
+  '/uploadVideo/:userId/:channelId/:identifier',
   isUserAndChannelExisting,
-  async (req: Request, res: Response) => {
+  uploadVideoFile,
+  async (req: videoUploadRequest, res: Response) => {
     try {
-      //const { thumbnail, video } = req.body
-      const { userId, channelId } = req.params
-      const videoId: Types.ObjectId = new ObjectId()
-
-      //const thumbnailData = thumbnail.replace(/^data:image\/png;base64,/, '')
-      const thumbnailFileName = `${videoId}.png`
-      //const thumbnailPath = path.join(config.thumbnailPath, thumbnailFileName)
-      const thumbnailUrl = `video/thumbnails/${thumbnailFileName}`
-
-      //const videoData = video.replace(/^data:video\/mp4;base64,/, '')
-      const videoFileName = `${videoId}.mp4`
-      //const videoPath = path.join(config.videoUploadPath, videoFileName)
-      const videoUrl = `videos/${videoFileName}`
-
-      // await Promise.all([
-      //   saveFile(thumbnailData, thumbnailPath),
-      //   saveFile(videoData, videoPath),
-      // ])
-
       const videoObj = new videoModel({
-        userId: new Types.ObjectId(userId),
-        channelId: new Types.ObjectId(channelId),
+        _id: new Types.ObjectId(req.params.identifier),
+        userId: new Types.ObjectId(req.params.userId),
+        channelId: new Types.ObjectId(req.params.channelId),
         title: 'dummy-title',
         description: 'dummy-description',
         category: 'dummy-category',
@@ -244,8 +129,8 @@ router.post(
         dislikes: [],
         comments: [],
         duration: 0,
-        videoPathUrl: videoUrl,
-        thumbnailImageUrl: thumbnailUrl,
+        videoPathUrl: req.videoUrl,
+        thumbnailImageUrl: req.thumbnailUrl,
         audience: 'dummy-audience',
         visibility: 'dummy-visibility',
         commentsPreference: 'commentsPreference',
@@ -255,12 +140,12 @@ router.post(
         publishStage: VideoPublishStage.Uploaded,
       })
 
-      //const savedVideo = await videoObj.save()
+      const savedVideo = await videoObj.save()
 
-      if (videoObj) {
+      if (savedVideo) {
         res.status(201).json({
           status: 201,
-          video: videoObj,
+          video: savedVideo,
           message: 'Video uploaded successfully.',
         })
       }
@@ -273,19 +158,5 @@ router.post(
     }
   }
 )
-
-router.post('/upload/:userId/:channelId', uploadVideo)
-
-// async function saveFile(data: string, filePath: string): Promise<string> {
-//   return new Promise((resolve, reject) => {
-//     fs.writeFile(filePath, data, 'base64', (error: any) => {
-//       if (error) {
-//         reject(error)
-//       } else {
-//         resolve(filePath)
-//       }
-//     })
-//   })
-// }
 
 export default router

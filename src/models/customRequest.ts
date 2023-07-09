@@ -9,3 +9,8 @@ export interface AuthenticatingRequest extends Request {
 export interface UserFindingrRequest extends Request {
   user?: User
 }
+
+export interface videoUploadRequest extends Request {
+  videoUrl?: string
+  thumbnailUrl?: string
+}

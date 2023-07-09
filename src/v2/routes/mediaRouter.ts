@@ -4,10 +4,12 @@ import { uploadImage } from '../../controllers/fileUpload-controller'
 import { ImageType } from '../../models/enums'
 import { imageModel } from '../../models/image'
 
+const { ObjectId } = require('bson')
+
 const router = Router()
 
 router.post(
-  '/uploadImage/:userId/:imageType',
+  '/uploadImage/:imageType/:fileNameIdentifier',
   uploadImage,
   async (req: Request, res: Response) => {
     try {
@@ -51,5 +53,11 @@ router.post(
     }
   }
 )
+
+router.get('/generateObjectId', (req, res) => {
+  const objectId = new ObjectId().toHexString()
+  console.log(objectId)
+  res.json({ objectId })
+})
 
 export default router

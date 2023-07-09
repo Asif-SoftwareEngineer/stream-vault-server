@@ -9,7 +9,7 @@ export const uploadVideo = async (req: Request, res: Response, next: NextFunctio
     // }
 
     await fileUploadMiddleWare.uploadVideoFile(req, res)
-    next()
+    return next()
   } catch (err) {
     return next(err)
   }
@@ -17,10 +17,6 @@ export const uploadVideo = async (req: Request, res: Response, next: NextFunctio
 
 export const uploadImage = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // if (req?.file == undefined) {
-    //   return res.status(422).json({ error: 'No image file provided.' })
-    // }
-
     await fileUploadMiddleWare.uploadImageFile(req, res)
 
     return next()

@@ -105,3 +105,25 @@ export async function newChannelApiValidator(
     return next()
   }
 }
+
+export async function newVideoApiValidator(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const data = req.body
+
+  if (
+    !data.userId ||
+    !data.channelId ||
+    !data.title ||
+    !data.description ||
+    !data.category
+  ) {
+    return res.status(400).json({
+      message: 'Video creation request failed due to insufficient information.',
+    })
+  } else {
+    return next()
+  }
+}

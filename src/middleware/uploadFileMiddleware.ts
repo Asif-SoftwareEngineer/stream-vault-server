@@ -18,11 +18,11 @@ let videoStorage = multer.diskStorage({
     const isFileTypeMatched = fileTypes.includes(fileExtension)
 
     if (isFileTypeMatched) {
-      cb(null, `${req.params.userId}-${file.fieldname}-${Date.now()}.${fileExtension}`)
+      cb(null, `${req.params.fileNameIdentifier}.${fileExtension}`)
     } else {
       cb(
         Error(
-          `File upload only supports the following filetypes - $ ${fileTypes.join('|')}`
+          `File upload only supports the following file types - $ ${fileTypes.join('|')}`
         ),
         ''
       )
@@ -75,11 +75,11 @@ const imageStorage = multer.diskStorage({
     const isFileTypeMatched = fileTypes.includes(fileExtension)
 
     if (isFileTypeMatched) {
-      cb(null, `${req.params.userId}-${file.fieldname}-${Date.now()}.${fileExtension}`)
+      cb(null, `${req.params.fileNameIdentifier}.${fileExtension}`)
     } else {
       cb(
         Error(
-          `File upload only supports the following filetypes - $ ${fileTypes.join('|')}`
+          `File upload only supports the following file types - $ ${fileTypes.join('|')}`
         ),
         ''
       )
