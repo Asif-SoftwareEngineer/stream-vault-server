@@ -17,7 +17,41 @@ import { accountVerificationModel } from '../../models/account-verification'
 import { CustomError } from '../../models/customErrorClass'
 import { User, userModel } from '../../models/user'
 
+//"postbuild": "npm run copy:assets",
+
 const router = Router()
+
+router.get('/profile/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId
+
+    const user = await userModel.findById(userId)
+
+    if (!user) {
+      res.status(404).json({ message: 'User not found' })
+    } else {
+      const filteredUser = {
+        userName: user.userName,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        mobile: user.mobile,
+        language: user.language,
+        role: user.role,
+        registrationDate: user.registrationDate,
+        membership: user.membership,
+        membershipRenewalDate: user.membershipRenewalDate,
+        isMembershipExpired: user.isMembershipExpired,
+        isVerified: user.isVerified,
+      }
+
+      res.status(200).json(filteredUser)
+    }
+  } catch (error) {
+    console.error('Error fetching user:', error)
+    res.status(500).json({ errorMessage: 'Failed to fetch user data' })
+  }
+})
 
 router.get('/', (req: Request, res: Response) => {
   userModel.find((err, usersList) => {

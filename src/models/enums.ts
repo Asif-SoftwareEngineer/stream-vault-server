@@ -51,13 +51,6 @@ export enum ImageType {
   VideoThumbnail = 'vidThumbnail',
 }
 
-export enum VideoUploadStatus {
-  Pending = 'pending',
-  Uploading = 'uploading',
-  Completed = 'completed',
-  Failed = 'failed',
-}
-
 export enum VideoPublishStage {
   Uploaded = 'uploaded',
   InformationAdded = 'informationAdded',

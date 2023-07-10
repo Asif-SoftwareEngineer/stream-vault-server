@@ -7,13 +7,10 @@ import {
   uploadVideoFile,
 } from '../../controllers/video.controller'
 import { videoUploadRequest } from '../../models/customRequest'
-import { VideoPublishStage, VideoUploadStatus } from '../../models/enums'
+import { VideoPublishStage } from '../../models/enums'
 import { videoModel } from '../../models/video'
 
-// interface videoUploadRequest extends Request {
-//   videoUrl?: string
-//   thumbnailUrl?: string
-// }
+import dayjs = require('dayjs')
 
 const router = Router()
 
@@ -24,16 +21,16 @@ router.get('/:videoId', async (req: Request, res: Response) => {
     const video = await videoModel.findById(videoId)
 
     if (!video) {
-      return res.status(404).json({ errorMessage: 'Video not found!' })
+      res.status(404).json({ errorMessage: 'Video not found!' })
     }
 
-    return res.status(200).json({
+    res.status(200).json({
       status: 200,
       video,
     })
   } catch (error) {
     console.error('Error:', error)
-    return res.status(500).json({ error: 'Internal Server Error' })
+    res.status(500).json({ error: 'Internal Server Error' })
   }
 })
 
@@ -90,7 +87,6 @@ router.post(
       video.commentsPreference = commentsPreference
       video.language = language
       video.location = location
-      video.uploadStatus = VideoUploadStatus.Pending
       video.publishStage = VideoPublishStage.InformationAdded
 
       // Save the updated video to the database
@@ -136,8 +132,8 @@ router.post(
         commentsPreference: 'commentsPreference',
         language: 'dummy-language',
         location: 'dummy-location',
-        uploadStatus: VideoUploadStatus.Completed,
         publishStage: VideoPublishStage.Uploaded,
+        uploadDate: dayjs().startOf('day').toDate(),
       })
 
       const savedVideo = await videoObj.save()

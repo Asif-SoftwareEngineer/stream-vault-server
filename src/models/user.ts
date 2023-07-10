@@ -17,6 +17,7 @@ export interface User {
   registrationDate: Date
   membership: MemberPlan
   membershipRenewalDate?: Date
+  isVerified: boolean
   piUserId?: string
   piUserName?: string
   userId?: string
@@ -67,6 +68,7 @@ const userSchema = new Schema<User>({
   membershipRenewalDate: { type: Date, required: false },
   picture: { type: String, required: false },
   isProfileDisabled: { type: Boolean, required: true },
+  isVerified: { type: Boolean, required: true },
   isMembershipExpired: { type: Boolean, required: true },
   watchList: [{ type: Schema.Types.ObjectId, required: false }],
   settings: { type: Object, ref: 'Setting' },

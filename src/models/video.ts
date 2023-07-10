@@ -1,6 +1,6 @@
 import { Document, Model, Schema, Types, model } from 'mongoose'
 
-import { VideoPublishStage, VideoUploadStatus } from './enums'
+import { VideoPublishStage } from './enums'
 import { Reaction } from './reaction'
 
 export interface Video extends Document {
@@ -16,12 +16,13 @@ export interface Video extends Document {
   commentsPreference: string
   language: string
   location: string
+  uploadDate: Date
   likes?: Reaction[]
   dislikes?: Reaction[]
   comments?: string[]
   duration?: number
-  uploadStatus: VideoUploadStatus
   publishStage: VideoPublishStage
+  publishDate?: Date
 }
 
 const videoSchema = new Schema<Video>({
@@ -51,8 +52,9 @@ const videoSchema = new Schema<Video>({
   commentsPreference: { type: String, required: true },
   language: { type: String, required: true },
   location: { type: String, required: true },
-  uploadStatus: { type: String, enum: Object.values(VideoUploadStatus), required: true },
   publishStage: { type: String, enum: Object.values(VideoPublishStage), required: true },
+  uploadDate: { type: Date, required: true },
+  publishDate: { type: Date, required: false },
 })
 
 export const videoModel: Model<Video> = model<Video>('Video', videoSchema)

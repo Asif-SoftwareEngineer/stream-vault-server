@@ -15,7 +15,6 @@
     "prestart": "npm run build",
     "start": "node dist/index.js",
     "prebuild": "rimraf dist",
-    "postbuild": "npm run copy:assets",
     "build": "tsc -p tsconfig.src.json",
     "copy:assets": "copyfiles -f \"src/public/**/*\" \"dist/public/\"",
     "build:test": "tsc -p tests/tsconfig.spec.json",
