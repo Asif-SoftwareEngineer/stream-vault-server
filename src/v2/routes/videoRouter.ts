@@ -8,7 +8,7 @@ import {
 } from '../../controllers/video.controller'
 import { videoUploadRequest } from '../../models/customRequest'
 import { VideoPublishStage } from '../../models/enums'
-import { videoModel } from '../../models/video'
+import { VideoView, videoModel } from '../../models/video'
 
 import dayjs = require('dayjs')
 
@@ -30,7 +30,85 @@ router.get('/:videoId', async (req: Request, res: Response) => {
     })
   } catch (error) {
     console.error('Error:', error)
-    res.status(500).json({ error: 'Internal Server Error' })
+    res.status(500).json({ errorMessage: 'Internal Server Error' })
+  }
+})
+
+router.get('/', async (req: Request, res: Response) => {
+  try {
+    const videoViews: VideoView[] = await videoModel.aggregate([
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      {
+        $unwind: '$user',
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'channelId',
+          foreignField: 'channels.channelId',
+          as: 'channel',
+        },
+      },
+      {
+        $unwind: '$channel',
+      },
+      {
+        $project: {
+          videoId: '$_id',
+          userId: '$userId',
+          channelId: '$channelId',
+          userName: '$user.userName',
+          channelName: {
+            $filter: {
+              input: '$user.channels',
+              as: 'channel',
+              cond: { $eq: ['$$channel.channelId', '$channelId'] },
+            },
+          },
+          title: '$title',
+          description: '$description',
+          url: '$videoPathUrl',
+          thumbnail: '$thumbnailImageUrl',
+          comments: '$comments',
+          reactions: '$reactions',
+        },
+      },
+      {
+        $unwind: '$channelName',
+      },
+      {
+        $project: {
+          videoId: 1,
+          userId: 1,
+          channelId: 1,
+          userName: 1,
+          channelName: '$channelName.name',
+          channelProfileImage: '$channelName.profileImageUrl',
+          title: 1,
+          description: 1,
+          url: 1,
+          thumbnail: 1,
+          comments: 1,
+          reactions: 1,
+        },
+      },
+    ])
+
+    if (videoViews.length === 0) {
+      return res.status(404).json({ errorMessage: 'No Videos found!' })
+    }
+
+    return res.status(200).json(videoViews)
+  } catch (error) {
+    console.error('Error:', error)
+    return res.status(500).json({ errorMessage: 'Internal Server Error' })
   }
 })
 
@@ -47,8 +125,7 @@ router.post(
         title,
         description,
         category,
-        likes,
-        dislikes,
+        reactions,
         comments,
         duration,
         videoPathUrl,
@@ -76,8 +153,7 @@ router.post(
       video.title = title
       video.description = description
       video.category = category
-      video.likes = likes
-      video.dislikes = dislikes
+      video.reactions = reactions
       video.comments = comments
       video.duration = duration
       video.videoPathUrl = videoPathUrl

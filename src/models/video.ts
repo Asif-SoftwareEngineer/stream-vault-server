@@ -17,12 +17,26 @@ export interface Video extends Document {
   language: string
   location: string
   uploadDate: Date
-  likes?: Reaction[]
-  dislikes?: Reaction[]
+  reactions?: Reaction[]
   comments?: string[]
   duration?: number
   publishStage: VideoPublishStage
   publishDate?: Date
+}
+
+export interface VideoView {
+  videoId: string
+  userId: string
+  channelId: string
+  userName: string
+  channelName: string
+  title: string
+  description: string
+  url: string
+  thumbnail: string
+  channelProfileImage: string
+  comments: string
+  reactions: Reaction[]
 }
 
 const videoSchema = new Schema<Video>({
@@ -31,13 +45,7 @@ const videoSchema = new Schema<Video>({
   title: { type: String, required: true },
   description: { type: String, required: true },
   category: { type: String, required: true },
-  likes: [
-    {
-      reactionType: { type: String, required: true },
-      reactingUserId: { type: Types.ObjectId, required: true },
-    },
-  ],
-  dislikes: [
+  reactions: [
     {
       reactionType: { type: String, required: true },
       reactingUserId: { type: Types.ObjectId, required: true },

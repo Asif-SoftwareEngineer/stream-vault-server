@@ -15,7 +15,9 @@ import {
 } from '../../controllers/userRegistration.controller'
 import { accountVerificationModel } from '../../models/account-verification'
 import { CustomError } from '../../models/customErrorClass'
+import { menuItems } from '../../models/menu-items'
 import { User, userModel } from '../../models/user'
+import { userMenu } from '../../models/user-menus'
 
 //"postbuild": "npm run copy:assets",
 
@@ -69,6 +71,33 @@ router.get('/:userId', async (req: Request, res: Response) => {
     res.status(404).send({ message: 'User not found.' })
   } else {
     res.send({ status: 200, user: userObj })
+  }
+})
+
+router.get('/menus/:userId', async (req, res) => {
+  try {
+    const userIdParam: string = req.params.userId
+
+    // Fetch the userMenus data based on the userId
+    const userMenus = await userMenu.findOne({ userId: userIdParam })
+
+    if (!userMenus) {
+      return res.status(404).json({ errorMessage: 'User Menus not found.' })
+    }
+
+    // Extract the required fields from the userMenus data
+    const { menuIds } = userMenus
+    const menus = await menuItems.find({ _id: { $in: menuIds } })
+    const menuData = menus.map((menu) => ({
+      menuId: menu.menuId,
+      menuName: menu.menuName,
+      url: menu.url,
+    }))
+
+    return res.status(200).json(menuData)
+  } catch (error) {
+    console.error('Error fetching userMenus:', error)
+    return res.status(500).json({ errorMessage: 'Internal server error.' })
   }
 })
 
