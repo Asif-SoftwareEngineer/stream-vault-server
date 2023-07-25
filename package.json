@@ -1,12 +1,18 @@
 {
-  "name": "streamvault_backend",
-  "version": "1.0.0",
-  "engines": {
-    "node": "18.12",
-    "npm": "8.19"
-  },
-  "description": "Backend Server",
+  "name": "streamvault-backend",
+  "version": "2.0.0",
+  "description": "Easy to learn and use full-stack TypeScript with Mongo, Express, Angular and Node",
   "main": "index.js",
+  "engines": {
+    "node": "18.17",
+    "npm": "9.6.7"
+  },
+  "config": {
+    "imageRepo": "streamvault/api",
+    "imageName": "streamvault-backend",
+    "imagePort": "3001",
+    "internalContainerPort": "3001"
+  },
   "scripts": {
     "style:fix": "import-sort --write \"{src,tests}/**/*.ts\" && prettier --write \"{src,tests}/**/*.ts\"",
     "style": "import-sort -l \"{src,tests}/**/*.ts\" && prettier --check \"{src,tests}/**/*.ts\"",
@@ -17,6 +23,7 @@
     "prebuild": "rimraf dist",
     "build": "tsc -p tsconfig.src.json",
     "copy:assets": "copyfiles -f \"src/public/**/*\" \"dist/public/\"",
+    "postbuild": "npm run copy:assets",
     "build:test": "tsc -p tests/tsconfig.spec.json",
     "codewatch": "nodemon --watch \"./src/**/*.ts\" -r dotenv/config --exec \"ts-node-dev\" src/index.ts",
     "tsc": "tsc",
@@ -29,23 +36,39 @@
     "docker:build": "cross-conf-env docker image build . -t $npm_package_config_imageRepo:$npm_package_version",
     "postdocker:build": "npm run docker:tag",
     "docker:tag": " cross-conf-env docker image tag $npm_package_config_imageRepo:$npm_package_version $npm_package_config_imageRepo:latest",
-    "docker:stop": "cross-conf-env docker stop $npm_package_config_imageName || true",
-    "docker:run": "run-s -c docker:stop docker:runHelper",
-    "docker:runHelper": "cross-conf-env docker run -e NODE_ENV=local --rm --name $npm_package_config_imageName -d -p $npm_package_config_imagePort:$npm_package_config_internalContainerPort $npm_package_config_imageRepo",
-    "predocker:publish": "echo Attention! Ensure `docker login` information is correct.",
+    "docker:run": "run-s -c docker:clean docker:runHelper",
+    "docker:runHelper": "cross-conf-env docker run -e NODE_ENV=local --name $npm_package_config_imageName -d -p $npm_package_config_imagePort:$npm_package_config_internalContainerPort $npm_package_config_imageRepo",
+    "predocker:publish": "echo Attention! Ensure `docker login` is correct.",
     "docker:publish": "cross-conf-env docker image push $npm_package_config_imageRepo:$npm_package_version",
     "postdocker:publish": "cross-conf-env docker image push $npm_package_config_imageRepo:latest",
     "docker:clean": "cross-conf-env docker rm -f $npm_package_config_imageName",
     "predocker:taillogs": "echo Web Server Logs:",
     "docker:taillogs": "cross-conf-env docker logs -f $npm_package_config_imageName",
-    "docker:open": "sleep 2 && cross-conf-env open-cli http://localhost:$npm_package_config_imagePort",
+    "docker:open:win": "echo Trying to launch on Windows && timeout 2 && start http://localhost:%npm_package_config_imagePort%",
+    "docker:open:mac": "echo Trying to launch on MacOS && sleep 2 && URL=http://localhost:$npm_package_config_imagePort && open $URL",
     "docker:debugmessage": "echo Docker Debug Completed Successfully! Hit Ctrl+C to terminate log tailing.",
     "predocker:debug": "run-s -c docker:build docker:run",
-    "docker:debug": "run-s -cs docker:build docker:run docker:open docker:debugmessage docker:taillogs",
+    "docker:debug": "run-s -cs docker:open:win docker:open:mac docker:debugmessage docker:taillogs",
     "prepublishOnly": "npm run test",
+    "prepare": "npm run build",
     "init:env": "init-dev-env generate-dot-env example.env -f"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abcd"
+  },
+  "keywords": [
+    "angular",
+    "typescript",
+    "node",
+    "mongo"
+  ],
   "author": "Asif Javed",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/abcd/issues"
+  },
+  "homepage": "https://github.com/duluca/abcd#readme",
   "dependencies": {
     "@sendgrid/mail": "^7.7.0",
     "@types/cors": "^2.8.12",
