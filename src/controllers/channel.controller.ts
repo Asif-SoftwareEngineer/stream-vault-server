@@ -23,7 +23,7 @@ export function checkForDuplicateChannels(
         },
       },
     ],
-    function (err, result) {
+    function (err: Error | null, result: any) {
       if (err) {
         console.log(err)
         return res.status(400).send({
@@ -31,7 +31,7 @@ export function checkForDuplicateChannels(
         })
       } else if (result) {
         let isChannelNameExists = result.find(
-          ({ _id }) => _id === req.body.name.toLowerCase()
+          ({ _id }: { _id: string}) => _id === req.body.name.toLowerCase()
         )
 
         if (isChannelNameExists) {

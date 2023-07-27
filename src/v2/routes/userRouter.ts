@@ -56,7 +56,7 @@ router.get('/profile/:userId', async (req, res) => {
 })
 
 router.get('/', (req: Request, res: Response) => {
-  userModel.find((err, usersList) => {
+  userModel.find((err: Error | null, usersList: any) => {
     if (err) {
       res.send(err)
     } else {

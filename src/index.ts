@@ -2,7 +2,8 @@ import * as http from 'http'
 
 import app from './app'
 import * as config from './config'
-import { connectToDatabase } from './db'
+
+//import { connectToDatabase } from './db'
 
 export let Instance: http.Server
 
@@ -16,7 +17,7 @@ async function start() {
   console.log(`Now connecting to MongoDB database.`)
 
   try {
-    connectToDatabase()
+    //connectToDatabase()
 
     Instance = http.createServer(app)
 

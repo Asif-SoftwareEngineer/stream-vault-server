@@ -101,13 +101,13 @@ router.get('/check/:channelName', (req: Request, res: Response) => {
       { $group: { _id: '$channels.name', count: { $sum: 1 } } },
       { $match: { count: { $gt: 0 } } },
     ],
-    function (err, result) {
+    function (err: Error | null, result: any) {
       if (err) {
         res.status(400).send({
           message: `Error happened while checking duplicate record for channel name`,
         })
       } else if (result) {
-        let isChannelNameExists = result.find(({ _id }) => _id === req.params.channelName)
+        let isChannelNameExists = result.find(({ _id }: { _id: string }) => _id === req.params.channelName)
 
         if (isChannelNameExists) {
           res.status(409).send({

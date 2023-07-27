@@ -34,10 +34,6 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'))
 })
 
-app.get('/', (req, res) => {
-  res.json('This is the backend server for Streamvault Application!')
-})
-
 app.use(api)
 
 export default app
